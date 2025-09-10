@@ -1,0 +1,229 @@
+.badge {
+    padding: .25rem .45rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+}
+.badge-sm {
+    font-weight: normal;
+    font-size: 0.625rem;
+}
+.btn {
+    &.btn-outline-primary {
+        .badge {
+            background-color: $primary;
+            color: $white;
+        }
+        &:hover,&:focus,&:active {
+            .badge {
+                background-color: $custom-white;
+                color: $default-text-color;
+            }   
+        }
+    }
+    &.btn-outline-secondary {
+        .badge {
+            background-color: $secondary;
+            color: $white;
+        }
+        &:hover,&:focus,&:active {
+            .badge {
+                background-color: $custom-white;
+                color: $default-text-color;
+            }   
+        }
+    }
+    &.btn-outline-warning {
+        .badge {
+            background-color: $warning;
+            color: $white;
+        }
+        &:hover,&:focus,&:active {
+            .badge {
+                background-color: $custom-white;
+                color: $default-text-color;
+            }   
+        }
+    }
+    &.btn-outline-info {
+        .badge {
+            background-color: $info;
+            color: $white;
+        }
+        &:hover,&:focus,&:active {
+            .badge {
+                background-color: $custom-white;
+                color: $default-text-color;
+            }   
+        }
+    }
+    &.btn-outline-success {
+        .badge {
+            background-color: $success;
+            color: $white;
+        }
+        &:hover,&:focus,&:active {
+            .badge {
+                background-color: $custom-white;
+                color: $default-text-color;
+            }   
+        }
+    }
+    &.btn-outline-danger {
+        .badge {
+            background-color: $danger;
+            color: $white;
+        }
+        &:hover,&:focus,&:active {
+            .badge {
+                background-color: $custom-white;
+                color: $default-text-color;
+            }   
+        }
+    }
+}
+.custom-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+.badge-icon {
+    position: relative;
+    .icon {
+        width: 2rem;
+        height: 2rem;
+        fill: $text-muted;
+        font-size: 2rem;
+    }
+    .badge {
+        position: absolute;
+        inset-inline-end: -0.5rem;
+    }
+}
+.text-badge {
+    position: relative;
+    .badge {
+        position: absolute;
+        inset-inline-end: -1rem;
+        inset-block-start: -1rem;
+    }
+}
+
+.shape {
+	border-style: solid;
+	border-block-start-width: 0;
+	border-inline-end-width: 70px;
+	border-block-end-width: 70px;
+	border-inline-start-width: 0;
+	float: right;
+	height: 0px;
+	width: 0px;
+	-ms-transform: rotate(360deg);
+	/* IE 9 */
+	-o-transform: rotate(360deg);
+	/* Opera 10.5 */
+	-webkit-transform: rotate(360deg);
+	/* Safari and Chrome */
+	transform: rotate(360deg);
+}
+
+.offer {
+	background: var(--custom-white);
+	border: 1px solid #ddd;
+	box-shadow: 0 1px 15px 1px rgba(62, 57, 107, 0.07);
+	margin: 15px 0;
+	overflow: hidden;
+}
+
+.shape {
+	border-block-color: $white-1;
+	border-inline-end-color: #d9534f;
+	border-inline-start-color: $white-1;
+}
+
+.offer-primary {
+	border-color: $primary;
+
+	.shape {
+		border-block-color: transparent;
+		border-inline-end-color:  $primary;
+		border-inline-start-color: transparent;
+	}
+}
+
+.offer-danger {
+	border-color: $danger;
+
+	.shape {
+		border-block-color: transparent;
+		border-inline-end-color:  $danger;
+		border-inline-start-color: transparent;
+	}
+}
+
+.offer-success {
+	border-color: $green;
+
+	.shape {
+		border-block-color: transparent;
+		border-inline-end-color:  $success;
+		border-inline-start-color: transparent;
+	}
+}
+
+.offer-default {
+	border-color: #6b6f80;
+
+	.shape {
+		border-block-color: transparent;
+		border-inline-end-color:  #6b6f80;
+		border-inline-start-color: transparent;
+	}
+}
+
+.offer-info {
+	border-color: $info;
+
+	.shape {
+		border-block-color: transparent;
+		border-inline-end-color:  $info;
+		border-inline-start-color: transparent;
+	}
+}
+
+.offer-warning {
+	border-color: $yellow;
+
+	.shape {
+		border-block-color: transparent;
+		border-inline-end-color:  $warning;
+		border-inline-start-color: transparent;
+	}
+}
+
+.shape-text {
+	color: $white;
+	font-size: 12px;
+	font-weight: bold;
+	position: relative;
+	inset-inline-end: -47px;
+	inset-block-start: 0px;
+	white-space: nowrap;
+	-ms-transform: rotate(30deg);
+	-o-transform: rotate(360deg);
+	-webkit-transform: rotate(30deg);
+	transform: rotate(30deg);
+}
+
+[dir="rtl"] {
+    .shape-text{
+        transform: rotate(310deg);
+    }
+}
+
+.offer-content {
+	padding: 20px;
+}
+
+.text-size {
+    font-size: 1rem;
+    font-weight: 500;
+}

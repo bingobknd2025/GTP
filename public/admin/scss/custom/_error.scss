@@ -1,0 +1,64 @@
+#particles-js {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: $custom-white;
+}
+.error-page {
+    position: absolute;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+.error-text {
+    font-size: 8.25rem;
+    font-weight: 500;
+    line-height: 1;
+}
+@media (max-width: 575.98px) {
+    .error-text {
+        font-size: 3rem;
+    }
+}
+
+.cover-image {
+	background-size: cover !important;
+}
+
+.rectangle {
+    position: relative;
+    background: $primary-01;
+    border-radius: 0.5rem;
+    // transform: rotate(-90deg);
+}
+.rectangle::before {
+    content: "";
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    background: $primary-01;
+    bottom: 0;
+    z-index: 99;
+    border-radius: 0px 100px 0px 0.5rem;
+    left: 0px;
+}
+
+.rectangle1::before {
+    content: "";
+    width: 100px;
+    height: 100px;
+    position: absolute;
+    background: $primary-01;
+    top: 0px;
+    right: 0px;
+    z-index: 99;
+    border-radius: 0px 0.5rem 0px  100px;
+}
+.rectangle1{
+    border-radius: 0.5rem;
+}
