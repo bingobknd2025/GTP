@@ -68,21 +68,29 @@ class CustomerAuthController extends Controller
 
     public function verifyOtp(Request $request)
     {
-        $customer = Auth::guard('customer');
-        $request->validate([
-            'otp' => 'required|numeric'
+        $validator = Validator::make($request->all(), [
+            'customer_otp' => 'required|numeric',
+            'email' => 'required|email'
         ]);
 
-        // Token se user identify karo
-
-        if (!$customer) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
         }
 
-        // OTP check
-        if ($customer->otp == $request->otp) {
-            $customer->otp = null; // OTP expire
-            $customer->email_verified_at = now();
+
+        $customer = Customer::where('email', $request->email)->first();
+
+        if (!$customer) {
+            return response()->json(['status' => 'error', 'message' => 'Customer not found'], 404);
+        }
+
+        if ($customer->customer_otp == $request->otp) {
+            $customer->customer_otp = null;
+            $customer->email_verfied = true;
             $customer->save();
 
             return response()->json([
@@ -95,39 +103,43 @@ class CustomerAuthController extends Controller
     }
 
 
+    public function profile(Request $request)
+    {
+        // Customer guard se user get karo
+        $customer = auth('customer')->user();
+
+        if (!$customer) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'customer' => $customer
+        ]);
+    }
 
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
 
-        if (! $token = auth('customer')->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        // Customer ko validate ya fetch karna
+        $customer = Customer::where('email', $credentials['email'])->first();
+
+        if (!$customer || !Hash::check($credentials['password'], $customer->password)) {
+            return response()->json(['error' => 'Invalid credentials'], 401);
         }
 
-        return $this->respondWithToken($token);
-    }
+        // JWT token generate karna
+        $token = JWTAuth::fromUser($customer);
 
-    public function profile(Request $request)
-    {
-        $token = $request->bearerToken();
-        if (!$token || !JWTAuth::setToken($token)->check()) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-        $accessToken = JWTAuth::setToken($token)->getPayload();
-        if (!$accessToken) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-        $user = $accessToken->get('sub');
-        if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        $data = Customer::where('id', $user)->first();
         return response()->json([
             'status' => 'success',
-            'customer' => $data
+            'token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth('customer')->factory()->getTTL() * 60
         ]);
     }
+
 
     public function logout()
     {

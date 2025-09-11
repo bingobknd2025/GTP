@@ -5,13 +5,13 @@ use App\Http\Controllers\Auth\CustomerAuthController;
 
 Route::middleware(['api.key'])->group(function () {
     Route::prefix('v1/customer')->group(function () {
-        Route::post('login', [CustomerAuthController::class, 'login']);
+        Route::any('login', [CustomerAuthController::class, 'login'])->name('login');
         Route::post('register', [CustomerAuthController::class, 'register']);
 
-        Route::middleware('auth:customer')->group(function () {
-            Route::post('verify-otp', [CustomerAuthController::class, 'verifyOtp']);
-            Route::get('profile', [CustomerAuthController::class, 'profile']);
+        Route::middleware(['jwt.customer'])->group(function () { // ✅ Apna naya middleware use karo
+            Route::post('verifyotp', [CustomerAuthController::class, 'verifyOtp']);
             Route::post('logout', [CustomerAuthController::class, 'logout']);
+            Route::post('profile', [CustomerAuthController::class, 'profile']);
         });
     });
 });
