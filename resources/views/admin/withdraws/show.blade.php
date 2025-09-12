@@ -8,74 +8,78 @@
             <div class="col-xl-12">
                 <div class="card custom-card">
                     <div class="card-header justify-content-between d-flex align-items-center">
-                        <div class="card-title">Deposit Details</div>
-                        <a href="{{ route('admin.deposits.index') }}" class="btn btn-sm btn-secondary">Back to Deposit List</a>
+                        <div class="card-title">Withdraw Details</div>
+                        <a href="{{ route('admin.withdraws.index') }}" class="btn btn-sm btn-secondary">Back to Withdraw List</a>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered text-nowrap w-100">
                                 <tbody>
                                     <tr>
-                                        <th>Deposit ID:</th>
-                                        <td>{{ $deposits->id }}</td>
+                                        <th>Withdraw ID:</th>
+                                        <td>{{ $withdrawal->id }}</td>
                                     </tr>
                                     <tr>
                                         <th>Trnx. ID:</th>
-                                        <td>{{ $deposits->txn_id ?? 'N/A' }}</td>
+                                        <td>{{ $withdrawal->txn_id ?? 'N/A' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Customer Name:</th>
-                                        <td>{{ $deposits->customer->fname ?? 'N/A' }} {{ $deposits->customer->lname ?? '' }}</td>
+                                        <td>{{ $withdrawal->customer->fname ?? 'N/A' }} {{ $withdrawal->customer->lname ?? '' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Amount:</th>
-                                        <td>{{ number_format($deposits->amount, 2) }}</td>
+                                        <td>{{ number_format($withdrawal->amount, 2) }}</td>
                                     </tr>
                                     <tr>
                                         <th>Payment Method:</th>
-                                        <td>{{ $deposits->payment_mode ?? 'N/A' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Plan:</th>
-                                        <td>{{ $deposits->plan->name ?? 'N/A' }}</td>
+                                        <td>{{ $withdrawal->payment_mode ?? 'N/A' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Reference Number:</th>
-                                        <td>{{ $deposits->reference_number ?? 'N/A' }}</td>
+                                        <td>{{ $withdrawal->reference_number ?? 'N/A' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Source:</th>
-                                        <td>{{ $deposits->source }}</td>
+                                        <td>{{ $withdrawal->source }}</td>
                                     </tr>
                                     <tr>
-                                        <th>Proof:</th>
-                                        <td>
-                                            @if($deposits->proof)
-                                            <img src="{{ asset('storage') . '/' . $deposits->proof }}" width="120px" class="mt-2" />
-                                            @else
-                                            N/A
-                                            @endif
-                                        </td>
+                                        <th>Charges:</th>
+                                        <td>{{ number_format($withdrawal->charges, 2) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>To Deduct:</th>
+                                        <td>{{ number_format($withdrawal->to_deduct, 2) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Pay Details:</th>
+                                        <td>{{ $withdrawal->pay_details ?? 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Comment:</th>
+                                        <td>{{ $withdrawal->comment ?? 'N/A' }}</td>
                                     </tr>
                                     <tr>
                                         <th>Status:</th>
                                         <td>
-                                            @if($deposits->status == 0)
+                                            @if($withdrawal->status == 'Pending')
                                             <span class="badge bg-warning">Pending</span>
-                                            @elseif($deposits->status == 1)
+                                            @elseif($withdrawal->status == 'Approved')
                                             <span class="badge bg-success">Approved</span>
-                                            @else
+                                            @elseif($withdrawal->status == 'Rejected')
                                             <span class="badge bg-danger">Rejected</span>
+                                            @else
+                                            <span class="badge bg-secondary">{{ $withdrawal->status }}</span>
                                             @endif
                                         </td>
                                     </tr>
                                     <tr>
                                         <th>Created At:</th>
-                                        <td>{{ $deposits->created_at }}</td>
+                                        <td>{{ $withdrawal->created_at }}</td>
                                     </tr>
                                     <tr>
                                         <th>Updated At:</th>
-                                        <td>{{ $deposits->updated_at }}</td>
+                                        <td>{{ $withdrawal->updated_at }}</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -10,131 +10,76 @@
             <div class="col-xl-12">
                 <div class="card custom-card">
                     <div class="card-header justify-content-between d-flex align-items-center">
-                        <div class="card-title">Edit KYC Entry</div>
-                        <a href="{{ route('admin.kycs.index') }}" class="btn btn-sm btn-secondary">Back to KYC List</a>
+                        <div class="card-title">Edit Deposit Entry</div>
+                        <a href="{{ route('admin.deposits.index') }}" class="btn btn-sm btn-secondary">Back to Deposit List</a>
                     </div>
                     <div class="card-body">
-                        <form id="kycForm" enctype="multipart/form-data">
+                        <form id="depositForm" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
                             <div class="row gy-4">
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="customer_id" class="form-label">Customer:</label>
-                                    <select class="form-control" id="customer_id" name="customer_id">
+                                    <label for="user" class="form-label">Customer:</label>
+                                    <select class="form-control" id="user" name="user">
                                         <option value="">Select Customer</option>
                                         @foreach($customers as $customer)
-                                            <option value="{{ $customer->id }}" {{ $kyc->customer_id == $customer->id ? 'selected' : '' }}>{{ $customer->fname }} {{ $customer->lname }}</option>
+                                        <option value="{{ $customer->id }}" {{ $deposit->user == $customer->id ? 'selected' : '' }}>
+                                            {{ $customer->fname }} {{ $customer->lname }}
+                                        </option>
                                         @endforeach
                                     </select>
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="first_name" class="form-label">First Name:</label>
-                                    <input type="text" class="form-control" id="first_name" name="first_name" value="{{ $kyc->first_name }}">
+                                    <label for="amount" class="form-label">Amount:</label>
+                                    <input type="number" class="form-control" id="amount" name="amount" min="1" step="0.01" value="{{ $deposit->amount }}">
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="last_name" class="form-label">Last Name:</label>
-                                    <input type="text" class="form-control" id="last_name" name="last_name" value="{{ $kyc->last_name }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="email" class="form-label">Email:</label>
-                                    <input type="email" class="form-control" id="email" name="email" value="{{ $kyc->email }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="country_code" class="form-label">Country Code:</label>
-                                    <input type="text" class="form-control" id="country_code" name="country_code" value="{{ $kyc->country_code }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="phone_number" class="form-label">Phone Number:</label>
-                                    <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ $kyc->phone_number }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="dob" class="form-label">Date of Birth:</label>
-                                    <input type="date" class="form-control" id="dob" name="dob" value="{{ $kyc->dob }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="social_media" class="form-label">Social Media:</label>
-                                    <input type="text" class="form-control" id="social_media" name="social_media" value="{{ $kyc->social_media }}" placeholder="Enter social media link (e.g., https://facebook.com/yourprofile)">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="address" class="form-label">Address:</label>
-                                    <textarea class="form-control" id="address" name="address" rows="2">{{ $kyc->address }}</textarea>
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="city" class="form-label">City:</label>
-                                    <input type="text" class="form-control" id="city" name="city" value="{{ $kyc->city }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="state" class="form-label">State:</label>
-                                    <input type="text" class="form-control" id="state" name="state" value="{{ $kyc->state }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="country" class="form-label">Country:</label>
-                                    <input type="text" class="form-control" id="country" name="country" value="{{ $kyc->country }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="document_type" class="form-label">Document Type:</label>
-                                    <input type="text" class="form-control" id="document_type" name="document_type" value="{{ $kyc->document_type }}">
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="kyc_type" class="form-label">KYC Type:</label>
-                                    <select class="form-control" id="kyc_type" name="kyc_type">
-                                        <option value="online" {{ $kyc->kyc_type == 'online' ? 'selected' : '' }}>Online</option>
-                                        <option value="offline" {{ $kyc->kyc_type == 'offline' ? 'selected' : '' }}>Offline</option>
+                                    <label for="payment_mode" class="form-label">Payment Mode</label>
+                                    <select class="form-control" id="payment_mode" name="payment_mode" readonly>
+                                        <option value="system" selected>Add By System</option>
                                     </select>
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="source" class="form-label">Source:</label>
                                     <select class="form-control" id="source" name="source">
-                                        <option value="APP" {{ $kyc->source == 'APP' ? 'selected' : '' }}>APP</option>
-                                        <option value="WEB" {{ $kyc->source == 'WEB' ? 'selected' : '' }}>WEB</option>
+                                        <option value="APP" {{ $deposit->source == 'APP' ? 'selected' : '' }}>APP</option>
+                                        <option value="WEB" {{ $deposit->source == 'WEB' ? 'selected' : '' }}>WEB</option>
                                     </select>
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="frontimg" class="form-label">Front Image:</label>
-                                    <input type="file" class="form-control" id="frontimg" name="frontimg">
-                                    @if($kyc->frontimg)
-                                        <img src="{{ asset('storage/' . $kyc->frontimg) }}" width="50px" class="mt-2"/>
-                                    @endif
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="backimg" class="form-label">Back Image:</label>
-                                    <input type="file" class="form-control" id="backimg" name="backimg">
-                                    @if($kyc->backimg)
-                                        <img src="{{ asset('storage/' . $kyc->backimg) }}" width="50px" class="mt-2"/>
-                                    @endif
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="status" class="form-label">Status:</label>
                                     <select class="form-control" id="status" name="status">
-                                        <option value="0" {{ $kyc->status == 0 ? 'selected' : '' }}>Pending</option>
-                                        <option value="1" {{ $kyc->status == 1 ? 'selected' : '' }}>Approved</option>
-                                        <option value="2" {{ $kyc->status == 2 ? 'selected' : '' }}>Rejected</option>
+                                        <option value="Pending" {{ $deposit->status == 'Pending' ? 'selected' : '' }}>Pending</option>
+                                        <option value="Approved" {{ $deposit->status == 'Approved' ? 'selected' : '' }}>Approved</option>
+                                        <option value="Rejected" {{ $deposit->status == 'Rejected' ? 'selected' : '' }}>Rejected</option>
+                                        <option value="Unknown" {{ $deposit->status == 'Unknown' ? 'selected' : '' }}>Unknown</option>
                                     </select>
                                 </div>
+
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="proof" class="form-label">Proof:</label>
+                                    <input type="file" class="form-control" id="proof" name="proof">
+                                    @if($deposit->proof)
+                                    @php
+                                    $ext = pathinfo($deposit->proof, PATHINFO_EXTENSION);
+                                    @endphp
+                                    @if(in_array(strtolower($ext), ['jpg','jpeg','png','gif','svg']))
+                                    <img src="{{ asset('storage/' . $deposit->proof) }}" width="100px" class="mt-2" />
+                                    @else
+                                    <a href="{{ asset('storage/' . $deposit->proof) }}" target="_blank" class="btn btn-sm btn-info mt-2">View File</a>
+                                    @endif
+                                    @endif
+                                </div>
+
                                 <div class="col-12 d-flex justify-content-end">
-                                    {{-- @can('KYC Edit') --}}{{-- Permission will be added later --}}
-                                    <button type="submit" class="btn btn-sm btn-primary" id="updateKycBtn">
-                                        Update KYC Entry
+                                    <button type="submit" class="btn btn-sm btn-primary" id="updateDepositBtn">
+                                        Update Deposit Entry
                                     </button>
-                                    {{-- @endcan --}}
                                 </div>
 
                             </div>
@@ -157,48 +102,50 @@
     });
 
     $(document).ready(function() {
-        $('#kycForm').on('submit', function(e) {
+        $('#depositForm').on('submit', function(e) {
             e.preventDefault();
-            $('.text-danger').remove(); // Clear previous error messages
+            $('.text-danger').remove();
 
-            const $btn = $('#updateKycBtn');
+            const $btn = $('#updateDepositBtn');
             const originalBtnHtml = $btn.html();
 
             $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...');
 
             let formData = new FormData(this);
-            formData.append('_method', 'PUT'); // Add this for PUT request
+            formData.append('_method', 'PUT');
 
             $.ajax({
-                url: "{{ route('admin.kycs.update', $kyc->id) }}",
-                method: "POST", // Use POST because FormData and PUT don't mix well directly
+                url: "{{ route('admin.deposits.update', $deposit->id) }}",
+                method: "POST",
                 data: formData,
                 processData: false,
                 contentType: false,
                 success: function(response) {
                     $btn.prop('disabled', false).html(originalBtnHtml);
                     if (response.success) {
-                        toastr.success(response.message || 'KYC entry updated successfully!');
-                        window.location.href = "{{ route('admin.kycs.index') }}";
+                        toastr.success(response.message || 'Deposit updated successfully!');
+                        window.location.href = "{{ route('admin.deposits.index') }}";
                     } else {
-                        toastr.error(response.message || 'Failed to update KYC entry.');
+                        toastr.error(response.message || 'Failed to update deposit.');
                     }
                 },
                 error: function(xhr) {
                     $btn.prop('disabled', false).html(originalBtnHtml);
-                    if (xhr.status === 422) { // Validation errors
+                    if (xhr.status === 422) {
                         let errors = xhr.responseJSON.errors;
                         $.each(errors, function(key, messages) {
                             let input = $('[name="' + key + '"]');
                             if (input.length) {
-                                input.closest('.col-xl-4, .col-lg-6, .col-md-6, .col-sm-12').append('<span class="text-danger validation-error-message">' + messages[0] + '</span>');
+                                input.closest('.col-xl-4, .col-lg-6, .col-md-6, .col-sm-12')
+                                    .append('<span class="text-danger validation-error-message">' + messages[0] + '</span>');
                                 input.on('input', function() {
-                                    $(this).closest('.col-xl-4, .col-lg-6, .col-md-6, .col-sm-12').find('.validation-error-message').remove();
+                                    $(this).closest('.col-xl-4, .col-lg-6, .col-md-6, .col-sm-12')
+                                        .find('.validation-error-message').remove();
                                 });
                             }
                         });
                     } else {
-                        toastr.error(xhr.responseJSON.message || 'An unexpected error occurred. Please try again.');
+                        toastr.error(xhr.responseJSON.message || 'An unexpected error occurred.');
                     }
                 }
             });

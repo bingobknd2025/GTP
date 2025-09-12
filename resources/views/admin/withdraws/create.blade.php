@@ -10,11 +10,11 @@
             <div class="col-xl-12">
                 <div class="card custom-card">
                     <div class="card-header justify-content-between d-flex align-items-center">
-                        <div class="card-title">Add Deposit Entry</div>
-                        <a href="{{ route('admin.deposits.index') }}" class="btn btn-sm btn-secondary">Back to Deposit List</a>
+                        <div class="card-title">Add Withdrawal</div>
+                        <a href="{{ route('admin.withdraws.index') }}" class="btn btn-sm btn-secondary">Back to Withdrawal List</a>
                     </div>
                     <div class="card-body">
-                        <form id="depositForm" enctype="multipart/form-data">
+                        <form id="withdrawForm" enctype="multipart/form-data">
                             @csrf
                             <div class="row gy-4">
 
@@ -40,7 +40,6 @@
                                     </select>
                                 </div>
 
-
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="source" class="form-label">Source:</label>
                                     <select class="form-control" id="source" name="source">
@@ -52,21 +51,35 @@
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="status" class="form-label">Status:</label>
                                     <select class="form-control" id="status" name="status">
-                                        <option value="Pending" selected>Pending</option>
-                                        <option value="Approved">Approved</option>
-                                        <option value="Rejected">Rejected</option>
-                                        <option value="Unknown">Unknown</option>
+                                        <option value="pending" selected>Pending</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="rejected">Rejected</option>
                                     </select>
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="proof" class="form-label">Proof:</label>
-                                    <input type="file" class="form-control" id="proof" name="proof">
+                                    <label for="charges" class="form-label">Charges:</label>
+                                    <input type="number" class="form-control" id="charges" name="charges" min="0" step="0.01">
+                                </div>
+
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="to_deduct" class="form-label">To Deduct:</label>
+                                    <input type="number" class="form-control" id="to_deduct" name="to_deduct" min="0" step="0.01">
+                                </div>
+
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="paydetails" class="form-label">Payment Details:</label>
+                                    <textarea class="form-control" id="paydetails" name="paydetails"></textarea>
+                                </div>
+
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="comment" class="form-label">Comment:</label>
+                                    <textarea class="form-control" id="comment" name="comment"></textarea>
                                 </div>
 
                                 <div class="col-12 d-flex justify-content-end">
-                                    <button type="submit" class="btn btn-sm btn-primary" id="addDepositBtn">
-                                        Add Deposit Entry
+                                    <button type="submit" class="btn btn-sm btn-primary" id="addWithdrawBtn">
+                                        Add Withdrawal Entry
                                     </button>
                                 </div>
                             </div>
@@ -90,11 +103,11 @@
     });
 
     $(document).ready(function() {
-        $('#depositForm').on('submit', function(e) {
+        $('#withdrawForm').on('submit', function(e) {
             e.preventDefault();
             $('.text-danger').remove();
 
-            const $btn = $('#addDepositBtn');
+            const $btn = $('#addWithdrawBtn');
             const originalBtnHtml = $btn.html();
 
             $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...');
@@ -102,7 +115,7 @@
             let formData = new FormData(this);
 
             $.ajax({
-                url: "{{ route('admin.deposits.store') }}",
+                url: "{{ route('admin.withdraws.store') }}", // ✅ route change
                 method: "POST",
                 data: formData,
                 processData: false,
@@ -110,11 +123,11 @@
                 success: function(response) {
                     $btn.prop('disabled', false).html(originalBtnHtml);
                     if (response.success) {
-                        toastr.success(response.message || 'Deposit created successfully!');
-                        $('#depositForm')[0].reset();
-                        window.location.href = "{{ route('admin.deposits.index') }}";
+                        toastr.success(response.message || 'Withdrawal created successfully!');
+                        $('#withdrawForm')[0].reset();
+                        window.location.href = "{{ route('admin.withdraws.index') }}"; // ✅ redirect to withdraw list
                     } else {
-                        toastr.error(response.message || 'Failed to add Deposit.');
+                        toastr.error(response.message || 'Failed to add Withdrawal.');
                     }
                 },
                 error: function(xhr) {

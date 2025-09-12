@@ -10,29 +10,35 @@
             <div class="col-xl-12">
                 <div class="card custom-card">
                     <div class="card-header justify-content-between d-flex align-items-center">
-                        <div class="card-title">Add Deposit Entry</div>
-                        <a href="{{ route('admin.deposits.index') }}" class="btn btn-sm btn-secondary">Back to Deposit List</a>
+                        <div class="card-title">Edit Withdrawal Entry</div>
+                        <a href="{{ route('admin.withdraws.index') }}" class="btn btn-sm btn-secondary">Back to Withdrawal List</a>
                     </div>
                     <div class="card-body">
-                        <form id="depositForm" enctype="multipart/form-data">
+                        <form id="withdrawForm" enctype="multipart/form-data">
                             @csrf
+                            @method('PUT')
                             <div class="row gy-4">
 
+                                <!-- Customer -->
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="user" class="form-label">Customer:</label>
                                     <select class="form-control" id="user" name="user">
                                         <option value="">Select Customer</option>
                                         @foreach($customers as $customer)
-                                        <option value="{{ $customer->id }}">{{ $customer->fname }} {{ $customer->lname }}</option>
+                                        <option value="{{ $customer->id }}" {{ $withdraw->user == $customer->id ? 'selected' : '' }}>
+                                            {{ $customer->fname }} {{ $customer->lname }}
+                                        </option>
                                         @endforeach
                                     </select>
                                 </div>
 
+                                <!-- Amount -->
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="amount" class="form-label">Amount:</label>
-                                    <input type="number" class="form-control" id="amount" name="amount" min="1" step="0.01">
+                                    <input type="number" class="form-control" id="amount" name="amount" min="1" step="0.01" value="{{ $withdraw->amount }}">
                                 </div>
 
+                                <!-- Payment Mode -->
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="payment_mode" class="form-label">Payment Mode</label>
                                     <select class="form-control" id="payment_mode" name="payment_mode" readonly>
@@ -40,33 +46,53 @@
                                     </select>
                                 </div>
 
-
+                                <!-- Source -->
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="source" class="form-label">Source:</label>
                                     <select class="form-control" id="source" name="source">
-                                        <option value="APP">APP</option>
-                                        <option value="WEB">WEB</option>
+                                        <option value="APP" {{ $withdraw->source == 'APP' ? 'selected' : '' }}>APP</option>
+                                        <option value="WEB" {{ $withdraw->source == 'WEB' ? 'selected' : '' }}>WEB</option>
                                     </select>
                                 </div>
 
+                                <!-- Status -->
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="status" class="form-label">Status:</label>
                                     <select class="form-control" id="status" name="status">
-                                        <option value="Pending" selected>Pending</option>
-                                        <option value="Approved">Approved</option>
-                                        <option value="Rejected">Rejected</option>
-                                        <option value="Unknown">Unknown</option>
+                                        <option value="pending" {{ $withdraw->status == 'pending' ? 'selected' : '' }}>Pending</option>
+                                        <option value="approved" {{ $withdraw->status == 'approved' ? 'selected' : '' }}>Approved</option>
+                                        <option value="rejected" {{ $withdraw->status == 'rejected' ? 'selected' : '' }}>Rejected</option>
                                     </select>
                                 </div>
 
+                                <!-- Charges -->
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="proof" class="form-label">Proof:</label>
-                                    <input type="file" class="form-control" id="proof" name="proof">
+                                    <label for="charges" class="form-label">Charges:</label>
+                                    <input type="number" class="form-control" id="charges" name="charges" min="0" step="0.01" value="{{ $withdraw->charges }}">
                                 </div>
 
+                                <!-- To Deduct -->
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="to_deduct" class="form-label">To Deduct:</label>
+                                    <input type="number" class="form-control" id="to_deduct" name="to_deduct" min="0" step="0.01" value="{{ $withdraw->to_deduct }}">
+                                </div>
+
+                                <!-- Payment Details -->
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="paydetails" class="form-label">Payment Details:</label>
+                                    <textarea class="form-control" id="paydetails" name="paydetails">{{ $withdraw->paydetails }}</textarea>
+                                </div>
+
+                                <!-- Comment -->
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="comment" class="form-label">Comment:</label>
+                                    <textarea class="form-control" id="comment" name="comment">{{ $withdraw->comment }}</textarea>
+                                </div>
+
+                                <!-- Submit -->
                                 <div class="col-12 d-flex justify-content-end">
-                                    <button type="submit" class="btn btn-sm btn-primary" id="addDepositBtn">
-                                        Add Deposit Entry
+                                    <button type="submit" class="btn btn-sm btn-primary" id="updateWithdrawBtn">
+                                        Update Withdrawal Entry
                                     </button>
                                 </div>
                             </div>
@@ -90,19 +116,20 @@
     });
 
     $(document).ready(function() {
-        $('#depositForm').on('submit', function(e) {
+        $('#withdrawForm').on('submit', function(e) {
             e.preventDefault();
             $('.text-danger').remove();
 
-            const $btn = $('#addDepositBtn');
+            const $btn = $('#updateWithdrawBtn');
             const originalBtnHtml = $btn.html();
 
-            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...');
+            $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...');
 
             let formData = new FormData(this);
+            formData.append('_method', 'PUT');
 
             $.ajax({
-                url: "{{ route('admin.deposits.store') }}",
+                url: "{{ route('admin.withdraws.update', $withdraw->id) }}",
                 method: "POST",
                 data: formData,
                 processData: false,
@@ -110,11 +137,10 @@
                 success: function(response) {
                     $btn.prop('disabled', false).html(originalBtnHtml);
                     if (response.success) {
-                        toastr.success(response.message || 'Deposit created successfully!');
-                        $('#depositForm')[0].reset();
-                        window.location.href = "{{ route('admin.deposits.index') }}";
+                        toastr.success(response.message || 'Withdrawal updated successfully!');
+                        window.location.href = "{{ route('admin.withdraws.index') }}";
                     } else {
-                        toastr.error(response.message || 'Failed to add Deposit.');
+                        toastr.error(response.message || 'Failed to update withdrawal.');
                     }
                 },
                 error: function(xhr) {
@@ -133,7 +159,7 @@
                             }
                         });
                     } else {
-                        toastr.error(xhr.responseJSON.message || 'An unexpected error occurred. Please try again.');
+                        toastr.error(xhr.responseJSON.message || 'An unexpected error occurred.');
                     }
                 }
             });

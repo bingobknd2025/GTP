@@ -7,9 +7,11 @@ use Illuminate\Http\Request;
 use App\Models\Kyc;
 use App\Models\Customer;
 use App\Models\Deposit;
+use App\Models\Setting;
 use DataTables;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -19,84 +21,6 @@ class DepositController extends Controller
     {
         // Permissions will be added here later
     }
-
-    // public function index(Request $request)
-    // {
-    //     if ($request->ajax()) {
-    //         $data = Deposit::orderBy('id', 'DESC')->get();
-    //         return DataTables::of($data)
-    //             ->addIndexColumn()
-
-    //             // Deposit ID
-    //             ->addColumn('id', fn($row) => $row->id)
-
-    //             // Transaction ID
-    //             ->addColumn('tnx_id', fn($row) => $row->transaction_id ?? 'N/A')
-
-    //             // User
-    //             ->addColumn('user', function ($row) {
-    //                 return $row->user ?? 'N/A';
-    //             })
-
-    //             // Amount
-    //             ->addColumn('amount', fn($row) => number_format($row->amount, 2))
-
-    //             // Payment Method
-    //             ->addColumn('payment_mode', fn($row) => $row->payment_mode ?? 'N/A')
-
-    //             // Plan
-    //             ->addColumn('plan', fn($row) => $row->plan->name ?? 'N/A')
-
-    //             // Reference Number
-    //             ->addColumn('reference_number', fn($row) => $row->reference_number ?? 'N/A')
-
-    //             // Source
-    //             ->addColumn('source', fn($row) => $row->source ?? 'N/A')
-
-    //             // Created At
-    //             ->addColumn('created_at', fn($row) => $row->created_at->format('Y-m-d H:i:s'))
-
-    //             // Updated At
-    //             ->addColumn('updated_at', fn($row) => $row->updated_at->format('Y-m-d H:i:s'))
-
-    //             // Status with badge
-    //             ->addColumn('status', function ($row) {
-    //                 $statusText = match ((int)$row->status) {
-    //                     0 => 'Pending',
-    //                     1 => 'Approved',
-    //                     2 => 'Rejected',
-    //                     default => 'Unknown',
-    //                 };
-    //                 $statusClass = match ((int)$row->status) {
-    //                     0 => 'bg-warning',
-    //                     1 => 'bg-success',
-    //                     2 => 'bg-danger',
-    //                     default => 'bg-secondary',
-    //                 };
-    //                 return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
-    //             })
-
-    //             // Action Buttons
-    //             ->addColumn('action', function ($row) {
-    //                 $editUrl = route('admin.deposits.edit', $row->id);
-    //                 $deleteUrl = route('admin.deposits.destroy', $row->id);
-    //                 $showUrl = route('admin.deposits.show', $row->id);
-
-    //                 $btn  = '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye fw-bold"></i></a>';
-    //                 $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-primary me-1" title="Edit"><i class="fas fa-edit fw-bold"></i></a>';
-    //                 $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline">'
-    //                     . csrf_field() . method_field('DELETE')
-    //                     . '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')" title="Delete"><i class="fas fa-trash-alt fw-bold"></i></button></form>';
-
-    //                 return $btn;
-    //             })
-
-    //             ->rawColumns(['status', 'action'])
-    //             ->make(true);
-    //     }
-
-    //     return view('admin.deposits.index');
-    // }
 
     public function index(Request $request)
     {
@@ -171,130 +95,200 @@ class DepositController extends Controller
     public function create(): View
     {
         $customers = Customer::all();
-        return view('admin.kycs.create', compact('customers'));
+        return view('admin.deposits.create', compact('customers'));
     }
 
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'first_name' => 'required',
-            'last_name' => 'required',
-            'email' => 'required|email',
-            'country_code' => 'required',
-            'phone_number' => 'required',
-            'dob' => 'required|date',
-            'social_media' => 'required|url',
-            'address' => 'required',
-            'city' => 'required',
-            'state' => 'required',
-            'country' => 'required',
-            'document_type' => 'required',
-            'frontimg' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'backimg' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'status' => 'integer|in:0,1,2',
-            'kyc_type' => 'required|in:online,offline',
-            'source' => 'required|in:APP,WEB',
+        $validate = Validator($request->all(), [
+            'user'             => 'required|exists:customers,id', // ya customers,id agar wahi relation hai
+            'amount'           => 'required|numeric|min:1',
+            'payment_mode'     => 'required|string',
+            'plan'             => 'nullable|exists:plans,id',
+            'source'           => 'required|in:APP,WEB',
+            'status'           => 'required|in:Pending,Approved,Rejected,Unknown',
+            'proof'            => 'required|file|mimes:jpeg,png,jpg,gif,svg,pdf,doc,docx|max:2048',
         ]);
+
+        if ($validate->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validate->errors()->first(),
+            ], 400);
+        }
 
         $input = $request->all();
 
-        if ($request->hasFile('frontimg')) {
-            $file = $request->file('frontimg');
-            $fileName = Str::random(20) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('storage/kyc_front');
+        $lastDeposit = Deposit::latest('id')->first();
+        $nextSequence = $lastDeposit ? $lastDeposit->id + 1 : 1;
+        $datePart = now()->format('dMY');
+        $txnNumber = str_pad($nextSequence, 6, '0', STR_PAD_LEFT);
+        $input['txn_id'] = 'TXN' . $datePart . $txnNumber;
+        $yearPart = now()->format('Y');
+        $refNumber = str_pad($nextSequence, 4, '0', STR_PAD_LEFT);
+        $input['reference_number'] = 'DEPOSIT' . $yearPart . $refNumber;
+
+        if ($request->hasFile('proof')) {
+            $file = $request->file('proof');
+            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('storage/deposit_proofs');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0777, true);
+            }
             $file->move($destinationPath, $fileName);
-            $input['frontimg'] = 'kyc_front/' . $fileName;
-        }
-        if ($request->hasFile('backimg')) {
-            $file = $request->file('backimg');
-            $fileName = Str::random(20) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('storage/kyc_back');
-            $file->move($destinationPath, $fileName);
-            $input['backimg'] = 'kyc_back/' . $fileName;
+            $input['proof'] = 'deposit_proofs/' . $fileName;
         }
 
-        Kyc::create($input);
+        // ✅ Save deposit
+        $deposit = Deposit::create([
+            'txn_id'           => $input['txn_id'],
+            'user'             => $input['user'],
+            'amount'           => $input['amount'],
+            'payment_mode'     => $input['payment_mode'],
+            'plan'             => $input['plan'] ?? null,
+            'reference_number' => $input['reference_number'],
+            'source'           => $input['source'],
+            'status'           => $input['status'],
+            'proof'            => $input['proof'] ?? null,
+        ]);
 
-        return response()->json(['success' => true, 'message' => 'KYC entry created successfully!']);
+        $mainSettings = Setting::first();
+        $user = Customer::find($deposit->user);
+
+        // Mail to Admin
+        Mail::send('emails.deposit_notification', [
+            'deposit'  => $deposit,
+            'settings' => $mainSettings,
+            'for'      => 'admin'
+        ], function ($message) use ($mainSettings) {
+            $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                ->subject('New Deposit Created');
+        });
+
+        // Mail to User
+        if ($user && $user->email) {
+            Mail::send('emails.deposit_notification', [
+                'deposit'  => $deposit,
+                'user'     => $user,
+                'for'      => 'user'
+            ], function ($message) use ($user) {
+                $message->to($user->email, $user->name ?? '')
+                    ->subject('Your Deposit Has Been Submitted');
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Deposit created successfully!',
+            'data'    => $deposit
+        ]);
     }
+
 
     public function show($id): View
     {
-        $kyc = Kyc::with('customer')->findOrFail($id);
-        return view('admin.kycs.show', compact('kyc'));
+        $deposits = Deposit::with('customer')->findOrFail($id);
+        return view('admin.deposits.show', compact('deposits'));
     }
 
     public function edit($id): View
     {
-        $kyc = Kyc::findOrFail($id);
+        $deposit = Deposit::findOrFail($id);
         $customers = Customer::all();
-        return view('admin.kycs.edit', compact('kyc', 'customers'));
+        return view('admin.deposits.edit', compact('deposit', 'customers'));
     }
 
     public function update(Request $request, $id): JsonResponse
     {
-        $request->validate([
-            'customer_id' => 'required|exists:customers,id',
-            'first_name' => 'required',
-            'last_name' => 'required',
-            'email' => 'required|email',
-            'country_code' => 'required',
-            'phone_number' => 'required',
-            'dob' => 'required|date',
-            'social_media' => 'required|url',
-            'address' => 'required',
-            'city' => 'required',
-            'state' => 'required',
-            'country' => 'required',
-            'document_type' => 'required',
-            'frontimg' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'backimg' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'status' => 'integer|in:0,1,2',
-            'kyc_type' => 'required|in:online,offline',
-            'source' => 'required|in:APP,WEB',
+        $validate = Validator($request->all(), [
+            'user'           => 'required|exists:customers,id',
+            'amount'         => 'required|numeric|min:1',
+            'payment_mode'   => 'required|string',
+            'plan'           => 'nullable|exists:plans,id',
+            'source'         => 'required|in:APP,WEB',
+            'status'         => 'required|in:Pending,Approved,Rejected,Unknown',
+            'proof'          => 'nullable|file|mimes:jpeg,png,jpg,gif,svg,pdf,doc,docx|max:2048',
         ]);
 
-        $kyc = Kyc::findOrFail($id);
-        $input = $request->except(['_token', '_method']);
-
-        if ($request->hasFile('frontimg')) {
-            if ($kyc->frontimg) {
-                Storage::disk('public')->delete($kyc->frontimg);
-            }
-            $file = $request->file('frontimg');
-            $fileName = Str::random(20) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('storage/kyc_front');
-            $file->move($destinationPath, $fileName);
-            $input['frontimg'] = 'kyc_front/' . $fileName;
-        }
-        if ($request->hasFile('backimg')) {
-            if ($kyc->backimg) {
-                Storage::disk('public')->delete($kyc->backimg);
-            }
-            $file = $request->file('backimg');
-            $fileName = Str::random(20) . '.' . $file->getClientOriginalExtension();
-            $destinationPath = public_path('storage/kyc_back');
-            $file->move($destinationPath, $fileName);
-            $input['backimg'] = 'kyc_back/' . $fileName;
+        if ($validate->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validate->errors()->first(),
+            ], 400);
         }
 
-        $kyc->update($input);
+        $deposit = Deposit::findOrFail($id);
+        $input = $request->all();
 
-        return response()->json(['success' => true, 'message' => 'KYC entry updated successfully!']);
+        // Handle proof file upload
+        if ($request->hasFile('proof')) {
+            // Delete old file if exists
+            if ($deposit->proof && file_exists(public_path('storage/' . $deposit->proof))) {
+                unlink(public_path('storage/' . $deposit->proof));
+            }
+
+            $file = $request->file('proof');
+            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $destinationPath = public_path('storage/deposit_proofs');
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0777, true);
+            }
+            $file->move($destinationPath, $fileName);
+            $input['proof'] = 'deposit_proofs/' . $fileName;
+        }
+
+        // Update deposit
+        $deposit->update([
+            'user'         => $input['user'],
+            'amount'       => $input['amount'],
+            'payment_mode' => $input['payment_mode'],
+            'plan'         => $input['plan'] ?? null,
+            'source'       => $input['source'],
+            'status'       => $input['status'],
+            'proof'        => $input['proof'] ?? $deposit->proof,
+        ]);
+
+        $mainSettings = Setting::first();
+        $user = Customer::find($deposit->user);
+
+        // Mail to Admin
+        Mail::send('emails.deposit_notification', [
+            'deposit'  => $deposit,
+            'settings' => $mainSettings,
+            'for'      => 'admin'
+        ], function ($message) use ($mainSettings) {
+            $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                ->subject('Deposit Updated');
+        });
+
+        // Mail to User
+        if ($user && $user->email) {
+            Mail::send('emails.deposit_notification', [
+                'deposit'  => $deposit,
+                'user'     => $user,
+                'for'      => 'user'
+            ], function ($message) use ($user) {
+                $message->to($user->email, $user->name ?? '')
+                    ->subject('Your Deposit Has Been Updated');
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Deposit updated successfully and emails sent!',
+            'data'    => $deposit
+        ]);
     }
+
 
     public function destroy($id): JsonResponse
     {
-        $kyc = Kyc::findOrFail($id);
-        if ($kyc->frontimg) {
-            Storage::disk('public')->delete($kyc->frontimg);
+        $deposit = Deposit::findOrFail($id);
+        if ($deposit->proof) {
+            Storage::disk('public')->delete($deposit->proof);
         }
-        if ($kyc->backimg) {
-            Storage::disk('public')->delete($kyc->backimg);
-        }
-        $kyc->delete();
+        $deposit->delete();
 
-        return response()->json(['success' => true, 'message' => 'KYC entry deleted successfully!']);
+        return response()->json(['success' => true, 'message' => 'Deposit deleted successfully!']);
     }
 }

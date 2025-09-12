@@ -103,8 +103,8 @@ Route::middleware('auth')->group(function () {
     // Deposit Routes
     Route::prefix('admin/deposits')->name('admin.deposits.')->group(function () {
         Route::get('/', [DepositController::class, 'index'])->name('index')->middleware(['permission:Deposit List']);
-        // Route::get('create', [DepositController::class, 'create'])->name('create')->middleware(['permission:Deposit Add']);
-        // Route::post('store', [DepositController::class, 'store'])->name('store')->middleware(['permission:Deposit Add']);
+        Route::get('create', [DepositController::class, 'create'])->name('create')->middleware(['permission:Deposit Add']);
+        Route::post('store', [DepositController::class, 'store'])->name('store')->middleware(['permission:Deposit Add']);
         Route::get('edit/{id}', [DepositController::class, 'edit'])->name('edit')->middleware(['permission:Deposit Edit']);
         Route::put('update/{id}', [DepositController::class, 'update'])->name('update')->middleware(['permission:Deposit Edit']);
         Route::get('show/{id}', [DepositController::class, 'show'])->name('show')->middleware(['permission:Deposit View']);
@@ -114,8 +114,8 @@ Route::middleware('auth')->group(function () {
     // Withdraw Routes
     Route::prefix('admin/withdraws')->name('admin.withdraws.')->group(function () {
         Route::get('/', [WithdrawController::class, 'index'])->name('index')->middleware(['permission:Withdraw List']);
-        // Route::get('create', [WithdrawController::class, 'create'])->name('create')->middleware(['permission:Withdraw Add']);
-        // Route::post('store', [WithdrawController::class, 'store'])->name('store')->middleware(['permission:Withdraw Add']);
+        Route::get('create', [WithdrawController::class, 'create'])->name('create')->middleware(['permission:Withdraw Add']);
+        Route::post('store', [WithdrawController::class, 'store'])->name('store')->middleware(['permission:Withdraw Add']);
         Route::get('edit/{id}', [WithdrawController::class, 'edit'])->name('edit')->middleware(['permission:Withdraw Edit']);
         Route::put('update/{id}', [WithdrawController::class, 'update'])->name('update')->middleware(['permission:Withdraw Edit']);
         Route::get('show/{id}', [WithdrawController::class, 'show'])->name('show')->middleware(['permission:Withdraw View']);
