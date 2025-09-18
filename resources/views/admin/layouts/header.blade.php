@@ -647,12 +647,7 @@
 
             <div class="main-sidebar-header">
                 <a href="index.html" class="header-logo">
-                    <img src="{{asset('admin/images/brand-logos/desktop-logo.png')}}" alt="logo" class="desktop-logo">
-                    <img src="{{asset('admin/images/brand-logos/toggle-logo.png')}}" alt="logo" class="toggle-logo">
-                    <img src="{{asset('admin/images/brand-logos/desktop-dark.png')}}" alt="logo" class="desktop-dark">
-                    <img src="{{asset('admin/images/brand-logos/toggle-dark.png')}}" alt="logo" class="toggle-dark">
-                    <img src="{{asset('admin/images/brand-logos/desktop-white.png')}}" alt="logo" class="desktop-white">
-                    <img src="{{asset('admin/images/brand-logos/toggle-white.png')}}" alt="logo" class="toggle-white">
+                    GTP
                 </a>
             </div>
             <div class="main-sidebar" id="sidebar-scroll">
@@ -720,6 +715,14 @@
                             </a>
                         </li>
                         @endcan
+                        @can('Transaction List')
+                        <li class="slide">
+                            <a href="{{route('admin.transactions.index')}}" class="side-menu__item">
+                                <i class="ri-file-user-line side-menu__icon"></i>
+                                <span class="side-menu__label">Transaction Management</span>
+                            </a>
+                        </li>
+                        @endcan
 
                         @can('Settings')
                         <li class="slide has-sub">
@@ -766,6 +769,11 @@
                                 @can('role-list')
                                 <li class="slide">
                                     <a href="{{route('roles.index')}}" class="side-menu__item"> Role Managment</a>
+                                </li>
+                                @endcan
+                                @can('Permission List')
+                                <li class="slide">
+                                    <a href="{{route('admin.permissions.index')}}" class="side-menu__item"> Permission Managment</a>
                                 </li>
                                 @endcan
 
