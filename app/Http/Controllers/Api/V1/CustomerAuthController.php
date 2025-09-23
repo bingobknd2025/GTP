@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\OtpHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Franchise;
 use App\Models\Kyc;
 use App\Models\Otp;
 use Carbon\Carbon;
@@ -18,15 +19,52 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomerAuthController extends Controller
 {
+    // public function register(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'fname' => 'required|string|max:100',
+    //         'lname' => 'required|string|max:100',
+    //         'email' => 'required|email|unique:customers',
+    //         'password' => 'required|string|min:6|confirmed',
+    //         'mobile_no' => 'required|digits_between:10,15|unique:customers',
+    //         'ref_by' => 'nullable|string|max:100',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json(['errors' => $validator->errors()], 422);
+    //     }
+
+    //     $data = $validator->validated();
+    //     $data['password'] = Hash::make($data['password']);
+    //     $customer = Customer::create($data);
+
+    //     $token = JWTAuth::fromUser($customer);
+
+    //     OtpHelper::generateAndSendOtp($customer, 'register');
+
+    //     return response()->json([
+    //         'status'  => 'success',
+    //         'message' => 'Customer registered successfully. OTP has been sent to your email for verification.',
+    //         'token'   => $token,
+    //         'customer' => [
+    //             'id'    => $customer->id,
+    //             'fname' => $customer->fname,
+    //             'lname' => $customer->lname,
+    //             'email' => $customer->email,
+    //             'ref_by' => $customer->ref_by,
+    //         ]
+    //     ], 201);
+    // }
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'fname' => 'required|string|max:100',
-            'lname' => 'required|string|max:100',
-            'email' => 'required|email|unique:customers',
-            'password' => 'required|string|min:6|confirmed',
+            'fname'     => 'required|string|max:100',
+            'lname'     => 'required|string|max:100',
+            'email'     => 'required|email|unique:customers',
+            'password'  => 'required|string|min:6|confirmed',
             'mobile_no' => 'required|digits_between:10,15|unique:customers',
-            'ref_by' => 'nullable|string|max:100',
+            'ref_by'    => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -35,6 +73,15 @@ class CustomerAuthController extends Controller
 
         $data = $validator->validated();
         $data['password'] = Hash::make($data['password']);
+
+        // If ref_by is provided → check franchise
+        if (!empty($data['ref_by'])) {
+            $franchise = Franchise::where('code', $data['ref_by'])->first();
+            if ($franchise) {
+                $data['franchise_id'] = $franchise->id; // Save franchise_id in customers table
+            }
+        }
+
         $customer = Customer::create($data);
 
         $token = JWTAuth::fromUser($customer);
@@ -42,18 +89,20 @@ class CustomerAuthController extends Controller
         OtpHelper::generateAndSendOtp($customer, 'register');
 
         return response()->json([
-            'status'  => 'success',
-            'message' => 'Customer registered successfully. OTP has been sent to your email for verification.',
-            'token'   => $token,
+            'status'   => 'success',
+            'message'  => 'Customer registered successfully. OTP has been sent to your email for verification.',
+            'token'    => $token,
             'customer' => [
-                'id'    => $customer->id,
-                'fname' => $customer->fname,
-                'lname' => $customer->lname,
-                'email' => $customer->email,
-                'ref_by' => $customer->ref_by,
+                'id'          => $customer->id,
+                'fname'       => $customer->fname,
+                'lname'       => $customer->lname,
+                'email'       => $customer->email,
+                'ref_by'      => $customer->ref_by,
+                'franchise_id' => $customer->franchise_id ?? null,
             ]
         ], 201);
     }
+
 
     public function login(Request $request)
     {

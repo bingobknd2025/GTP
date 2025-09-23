@@ -19,7 +19,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
 
-class DataController extends Controller
+class CustomerDataController extends Controller
 {
 
     public function getFranchises(Request $request)

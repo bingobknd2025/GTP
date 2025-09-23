@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\V1\CustomerAuthController;
-use App\Http\Controllers\Api\V1\DataController;
+use App\Http\Controllers\Api\V1\CustomerDataController;
 use App\Http\Controllers\Api\V1\FranchiseAuthController;
+use App\Http\Controllers\Api\V1\FranchiseDataController;
 use Dflydev\DotAccessData\Data;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('api.key')->group(function () {
     Route::prefix('v1')->group(function () {
         Route::post('get-country', [CustomerAuthController::class, 'getCountry']);
-        Route::post('get-franchises', [DataController::class, 'getFranchises']);
+        Route::post('get-franchises', [CustomerDataController::class, 'getFranchises']);
 
         Route::prefix('customer')->group(function () {
             Route::post('register', [CustomerAuthController::class, 'register']);
@@ -32,9 +33,9 @@ Route::middleware('api.key')->group(function () {
                 Route::post('kyc/submit-final', [CustomerAuthController::class, 'finalSubmit']);
 
                 // Order APIs
-                Route::post('order-create', [DataController::class, 'createOrder']);
-                Route::post('orders-list', [DataController::class, 'listOrders']);
-                Route::post('order-details', [DataController::class, 'orderDetails']);
+                Route::post('order-create', [CustomerDataController::class, 'createOrder']);
+                Route::post('orders-list', [CustomerDataController::class, 'listOrders']);
+                Route::post('order-details', [CustomerDataController::class, 'orderDetails']);
 
 
                 Route::get('profile', function () {
@@ -50,9 +51,19 @@ Route::middleware('api.key')->group(function () {
             Route::post('login', [FranchiseAuthController::class, 'login']);
 
             Route::middleware('auth:franchise')->group(function () {
+                // OTP API
                 Route::post('verify-otp', [FranchiseAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [FranchiseAuthController::class, 'resendOtp']);
+
                 Route::post('logout', [FranchiseAuthController::class, 'logout']);
+
+                // Customer Management APIs
+                Route::post('customers-list', [FranchiseDataController::class, 'getCustomers']);
+
+                // Order Management APIs
+                Route::post('orders-all', [FranchiseDataController::class, 'listAllOrders']);
+                Route::post('order-details', [FranchiseDataController::class, 'orderDetails']);
+
                 Route::get('profile', function () {
                     return auth('franchise')->user();
                 });
