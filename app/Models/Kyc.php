@@ -22,9 +22,12 @@ class Kyc extends Model
         'city',
         'state',
         'country',
+        'resi_address_status',
         'address_proof_type',
         'address_proof_file',
+        'address_veri_status',
         'document_type',
+        'mobile_status',
         'frontimg',
         'backimg',
         'status',
@@ -37,7 +40,9 @@ class Kyc extends Model
     ];
 
 
-    protected $casts = [];
+    protected $casts = [
+        'mobile_verified_at' => 'datetime',
+    ];
 
     public function customer()
     {

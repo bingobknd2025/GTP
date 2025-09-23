@@ -88,7 +88,7 @@ class FranchiseController extends Controller
         ]);
 
         $input = $request->all();
-        
+
         // Generate unique code
         do {
             $code = strtoupper(Str::random(10)); // Generate a random string of 10 characters and convert to uppercase
@@ -108,7 +108,7 @@ class FranchiseController extends Controller
         Franchise::create($input);
 
         return redirect()->route('admin.franchises.index')
-                         ->with('success', 'Franchise created successfully.');
+            ->with('success', 'Franchise created successfully.');
     }
 
     public function show($id): View
@@ -162,7 +162,7 @@ class FranchiseController extends Controller
         $franchise->update($input);
 
         return redirect()->route('admin.franchises.index')
-                         ->with('success', 'Franchise updated successfully.');
+            ->with('success', 'Franchise updated successfully.');
     }
 
     public function destroy($id): RedirectResponse
@@ -170,7 +170,7 @@ class FranchiseController extends Controller
         Franchise::findOrFail($id)->delete();
 
         return redirect()->route('admin.franchises.index')
-                         ->with('success', 'Franchise deleted successfully.');
+            ->with('success', 'Franchise deleted successfully.');
     }
 
     public function updateStatus(Request $request, $id)

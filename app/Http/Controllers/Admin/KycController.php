@@ -21,50 +21,6 @@ class KycController extends Controller
         // Permissions will be added here later
     }
 
-    // public function index(Request $request)
-    // {
-    //     if ($request->ajax()) {
-    //         $data = Kyc::orderBy('id', 'DESC')->get();
-
-    //         return DataTables::of($data)
-    //             ->addIndexColumn()
-    //             ->addColumn('customer_name', function ($row) {
-    //                 return $row->customer ? $row->customer->fname . ' ' . $row->customer->lname : 'N/A';
-    //             })
-    //             ->addColumn('status', function ($row) {
-    //                 $statusText = match ((int)$row->status) {
-    //                     0 => 'Pending',
-    //                     1 => 'Approved',
-    //                     2 => 'Rejected',
-    //                 };
-    //                 $statusClass = match ((int)$row->status) {
-    //                     0 => 'btn-warning',
-    //                     1 => 'btn-success',
-    //                     2 => 'btn-danger',
-    //                 };
-    //                 return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
-    //             })
-
-    //             ->addColumn('action', function ($row) {
-    //                 $btn = '';
-    //                 $editUrl = route('admin.kycs.edit', $row->id);
-    //                 $deleteUrl = route('admin.kycs.destroy', $row->id);
-    //                 $showUrl = route('admin.kycs.show', $row->id);
-
-    //                 // Permissions to be added here later
-    //                 $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-primary me-1" title="Edit"><i class="fas fa-edit fw-bold"></i></a>';
-    //                 $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline me-1">' . csrf_field() . method_field('DELETE') . '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure to delete this KYC entry?\')" title="Delete"><i class="fas fa-trash-alt fw-bold"></i></button></form>';
-    //                 $btn .= '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye fw-bold"></i></a>';
-
-    //                 return $btn;
-    //             })
-    //             ->rawColumns(['customer_name', 'status', 'action'])
-    //             ->make(true);
-    //     }
-
-    //     return view('admin.kycs.index');
-    // }
-
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -75,15 +31,27 @@ class KycController extends Controller
                 ->addColumn('customer_name', function ($row) {
                     return $row->customer ? $row->customer->fname . ' ' . $row->customer->lname : 'N/A';
                 })
-                ->editColumn('status', function ($row) {
-                    return $row->status; // ab string hoga: pending, approved, rejected
+                ->addColumn('status', function ($row) {
+                    $statusText = match ((int)$row->status) {
+                        0 => 'Pending',
+                        1 => 'Approved',
+                        2 => 'Rejected',
+                    };
+                    $statusClass = match ((int)$row->status) {
+                        0 => 'btn-warning',
+                        1 => 'btn-success',
+                        2 => 'btn-danger',
+                    };
+                    return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
                 })
+
                 ->addColumn('action', function ($row) {
                     $btn = '';
                     $editUrl = route('admin.kycs.edit', $row->id);
                     $deleteUrl = route('admin.kycs.destroy', $row->id);
                     $showUrl = route('admin.kycs.show', $row->id);
 
+                    // Permissions to be added here later
                     $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-primary me-1" title="Edit"><i class="fas fa-edit fw-bold"></i></a>';
                     $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline me-1">' . csrf_field() . method_field('DELETE') . '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure to delete this KYC entry?\')" title="Delete"><i class="fas fa-trash-alt fw-bold"></i></button></form>';
                     $btn .= '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye fw-bold"></i></a>';
@@ -96,7 +64,6 @@ class KycController extends Controller
 
         return view('admin.kycs.index');
     }
-
 
     public function create(): View
     {

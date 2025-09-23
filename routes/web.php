@@ -12,6 +12,7 @@ use App\Http\Controllers\Front\FranchiseAuthController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DepositController;
 use App\Http\Controllers\Admin\KycController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TransactionController;
@@ -123,6 +124,17 @@ Route::middleware('auth')->group(function () {
         Route::put('update/{id}', [WithdrawController::class, 'update'])->name('update')->middleware(['permission:Withdraw Edit']);
         Route::get('show/{id}', [WithdrawController::class, 'show'])->name('show')->middleware(['permission:Withdraw View']);
         Route::delete('destroy/{id}', [WithdrawController::class, 'destroy'])->name('destroy')->middleware(['permission:Withdraw Delete']);
+    });
+
+    // Order Routes
+    Route::prefix('admin/orders')->name('admin.orders.')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])->name('index')->middleware(['permission:Order List']);
+        Route::get('create', [OrderController::class, 'create'])->name('create')->middleware(['permission:Order Add']);
+        Route::post('store', [OrderController::class, 'store'])->name('store')->middleware(['permission:Order Add']);
+        Route::get('edit/{id}', [OrderController::class, 'edit'])->name('edit')->middleware(['permission:Order Edit']);
+        Route::put('update/{id}', [OrderController::class, 'update'])->name('update')->middleware(['permission:Order Edit']);
+        Route::get('show/{id}', [OrderController::class, 'show'])->name('show')->middleware(['permission:Order View']);
+        Route::delete('destroy/{id}', [OrderController::class, 'destroy'])->name('destroy')->middleware(['permission:Order Delete']);
     });
 
     // Transaction Routes

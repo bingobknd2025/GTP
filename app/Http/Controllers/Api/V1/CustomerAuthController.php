@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Kyc;
 use App\Models\Otp;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -258,110 +259,15 @@ class CustomerAuthController extends Controller
 
         $data = json_decode($resp, true);
 
-        // 👇 expires_in calculate karo
         $expiresAt  = $data['expiresAt'] ?? null;
         $expiresIn  = $expiresAt ? ($expiresAt - time()) : null;
 
         return response()->json([
             'access_token' => $data['token'] ?? null,
             'expires_in'   => $expiresIn,
-            'raw_response' => $data   // debug ke liye (remove in prod)
+            'raw_response' => $data
         ]);
     }
-
-
-    // public function handleWebhook(Request $request)
-    // {
-    //     $rawBody         = $request->getContent();
-    //     $headerSignature = $request->header('X-Sumsub-Signature') ?? $request->header('X-Signature');
-    //     $webhookSecret   = env('SUMSUB_WEBHOOK_SECRET');
-
-    //     if ($webhookSecret && $headerSignature) {
-    //         $calculated = hash_hmac('sha256', $rawBody, $webhookSecret);
-    //         if (!hash_equals($calculated, $headerSignature)) {
-    //             return response('Invalid signature', 403);
-    //         }
-    //     }
-
-    //     $payload = $request->json()->all();
-
-    //     $event         = $payload['eventType'] ?? ($payload['type'] ?? null);
-    //     $externalUserId = $payload['payload']['externalUserId'] ?? $payload['externalUserId'] ?? null;
-    //     $reviewResult  = $payload['payload']['reviewResult'] ?? ($payload['reviewResult'] ?? null);
-
-    //     $statusToSet = 'Under review';
-    //     if ($reviewResult) {
-    //         $decision = is_array($reviewResult) ? ($reviewResult['finalDecision'] ?? $reviewResult['reviewStatus'] ?? null) : $reviewResult;
-    //         if (in_array(strtoupper($decision), ['GREEN', 'APPROVED', 'SUCCESS'])) {
-    //             $statusToSet = '1';
-    //         } elseif (in_array(strtoupper($decision), ['RED', 'DENIED', 'REJECTED'])) {
-    //             $statusToSet = '2';
-    //         }
-    //     } elseif ($event) {
-    //         if (str_contains(strtolower($event), 'approved') || str_contains(strtolower($event), 'verified')) {
-    //             $statusToSet = '1';
-    //         } elseif (str_contains(strtolower($event), 'rejected') || str_contains(strtolower($event), 'denied')) {
-    //             $statusToSet = '2';
-    //         }
-    //     }
-
-    //     $id = null;
-    //     if ($externalUserId && preg_match('/(\d+)$/', $externalUserId, $m)) {
-    //         $id = intval($m[1]);
-    //     }
-
-    //     if ($id) {
-    //         $user = Customer::find($id); // ya Customer model
-    //         if ($user) {
-    //             $checkkyc = DB::table('kycs')->where([
-    //                 'customer_id' => $user->id,
-    //                 'kyc_type'    => 'online'
-    //             ])->first();
-
-    //             if (!$checkkyc) {
-    //                 $kycId = DB::table('kycs')->insertGetId([
-    //                     'customer_id'  => $user->id,
-    //                     'first_name'   => $user->fname ?? '',
-    //                     'last_name'    => $user->lname ?? '',
-    //                     'email'        => $user->email,
-    //                     'country_code' => $user->country_code ?? '',
-    //                     'phone_number' => $user->phone ?? '',
-    //                     'country'      => $user->country ?? '',
-    //                     'status'       => $statusToSet,
-    //                     'kyc_type'     => 'online',
-    //                     'created_by'   => $user->id,
-    //                     'updated_by'   => $user->id,
-    //                     'source'       => 'WEB',
-    //                     'created_at'   => now(),
-    //                     'updated_at'   => now(),
-    //                 ]);
-    //                 $user->kyc_id = $kycId;
-    //             } else {
-    //                 DB::table('kycs')->where('id', $checkkyc->id)->update([
-    //                     'status'     => $statusToSet,
-    //                     'updated_at' => now(),
-    //                 ]);
-    //             }
-
-    //             $user->email_verfied = $statusToSet;
-    //             $user->save();
-
-    //             $subject = "KYC Status Updated.";
-    //             $message = $statusToSet == 'Verified'
-    //                 ? "Your KYC successfully completed. Now you can deposit and buy plans."
-    //                 : "Your KYC is under review / rejected. Please contact support.";
-
-    //             Mail::send([], [], function ($m) use ($user, $subject, $message) {
-    //                 $m->to($user->email, $user->fname)
-    //                     ->subject($subject)
-    //                     ->setBody($message, 'text/plain') // plain text body
-    //                     ->from(config('mail.from.address'), config('mail.from.name'));
-    //             });
-    //         }
-    //     }
-
-    //     return response()->json(['ok' => true]);
-    // }
 
     public function handleWebhook(Request $request)
     {
@@ -459,15 +365,377 @@ class CustomerAuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'KYC already submitted',
-                'status'  => $kysstatus->status ?? 'Null', // use your actual status column
+                'status'  => $kysstatus->status ?? 'Null',
             ], 200);
         }
 
-        // If KYC not submitted, allow further flow
         return response()->json([
             'status' => true,
             'is_submit' => false,
             'message' => 'KYC not submitted yet, you can proceed',
         ], 200);
+    }
+
+    public function getCountry(Request $request)
+    {
+        $country = DB::table('countries')->orderBy('id', 'desc')->get();
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Country get Successfully',
+            'country' => $country
+        ], 200);
+    }
+
+    public function submitIdentity(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'first_name'      => 'required|string|max:255',
+                'last_name'       => 'required|string|max:255',
+                'dob'             => 'required|string|max:255',
+                'identity_type'   => 'required|string|max:255|in:Aadhar,PAN,Passport,VoterID,DrivingLicense',
+                'identity_number' => 'required|string|max:50',
+                'frontimg'        => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+                'backimg'         => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Validation errors',
+                    'errors'  => $validator->errors()
+                ], 422);
+            }
+
+            // JWT authentication
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            // file upload
+            $frontPath = $request->file('frontimg')->store('kyc_docs', 'public');
+            $backPath  = $request->hasFile('backimg')
+                ? $request->file('backimg')->store('kyc_docs', 'public')
+                : null;
+
+            // save/update KYC
+            $kyc = Kyc::updateOrCreate(
+                ['customer_id' => $customer->id],
+                [
+                    'first_name'      => $request->first_name,
+                    'last_name'       => $request->last_name,
+                    'dob'             => $request->dob,
+                    'identity_type'   => $request->identity_type,
+                    'identity_number' => $request->identity_number,
+                    'frontimg'        => $frontPath,
+                    'backimg'         => $backPath,
+                    'identity_status' => 'true',
+                    'updated_by'      => $customer->id,
+                ]
+            );
+
+            // sirf updated fields response me bhejna
+            $updatedData = [
+                'first_name'      => $kyc->first_name,
+                'last_name'       => $kyc->last_name,
+                'dob'             => $kyc->dob,
+                'identity_type'   => $kyc->identity_type,
+                'identity_number' => $kyc->identity_number,
+                'frontimg'        => $kyc->frontimg,
+                'backimg'         => $kyc->backimg,
+                'identity_status' => $kyc->identity_status,
+            ];
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Personal Identity submitted successfully.',
+                'data'    => $updatedData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function submitResidentialAddress(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'country'   => 'required|string|max:255',
+                'city'      => 'required|string|max:255',
+                'address'   => 'required|string|max:500',
+                'state'     => 'required|string|max:255',
+                'zip_code'  => 'required|string|max:20',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Validation errors',
+                    'errors'  => $validator->errors()
+                ], 422);
+            }
+
+            // JWT authentication
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            // save/update KYC address
+            $kyc = Kyc::updateOrCreate(
+                ['customer_id' => $customer->id],
+                [
+                    'country'             => $request->country,
+                    'city'                => $request->city,
+                    'address'             => $request->address,
+                    'state'               => $request->state,
+                    'zip_code'            => $request->zip_code,
+                    'resi_address_status' => 'true',
+                    'updated_by'          => $customer->id,
+                ]
+            );
+
+            // Sirf updated fields response me
+            $updatedData = [
+                'country'             => $kyc->country,
+                'city'                => $kyc->city,
+                'address'             => $kyc->address,
+                'state'               => $kyc->state,
+                'zip_code'            => $kyc->zip_code,
+                'resi_address_status' => $kyc->resi_address_status,
+            ];
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Residential Address submitted successfully.',
+                'data'    => $updatedData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function submitAddressProof(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'address_proof_type'  => 'required|in:Utility Bill,Rent Agreement,Bank Statement,Voter ID',
+                'address_proof_file'  => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Validation errors',
+                    'errors'  => $validator->errors()
+                ], 422);
+            }
+
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            $filePath = null;
+            if ($request->hasFile('address_proof_file')) {
+                $filePath = $request->file('address_proof_file')->store('address_proofs', 'public');
+            }
+
+            $kyc = Kyc::updateOrCreate(
+                ['customer_id' => $customer->id],
+                [
+                    'address_proof_type'  => $request->address_proof_type,
+                    'address_proof_file'  => $filePath,
+                    'address_veri_status' => 'true',
+                    'updated_by'          => $customer->id,
+                ]
+            );
+
+            $updatedData = [
+                'address_proof_type'  => $kyc->address_proof_type,
+                'address_proof_file'  => $kyc->address_proof_file,
+                'address_veri_status' => $kyc->address_veri_status,
+            ];
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Address Proof submitted successfully.',
+                'data'    => $updatedData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function submitMobile(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'phone_number' => 'required|string|max:15',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Validation errors',
+                    'errors'  => $validator->errors()
+                ], 422);
+            }
+
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            $kyc = Kyc::updateOrCreate(
+                ['customer_id' => $customer->id],
+                [
+                    'phone_number'       => $request->phone_number,
+                    'mobile_verified_at' => now(),
+                    'mobile_status'      => 'true',
+                    'updated_by'         => $customer->id,
+                ]
+            );
+
+            $updatedData = [
+                'phone_number'       => $kyc->phone_number,
+                'mobile_verified_at' => $kyc->mobile_verified_at,
+                'mobile_status'      => $kyc->mobile_status,
+            ];
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Mobile number verified successfully.',
+                'data'    => $updatedData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function finalSubmit(Request $request)
+    {
+        try {
+            // JWT authentication
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            // Fetch the customer's KYC record
+            $kyc = Kyc::where('customer_id', $customer->id)->first();
+
+            if (!$kyc) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'KYC record not found for this user.'
+                ], 404);
+            }
+
+            // Check if all required statuses are true
+            $incompleteSteps = [];
+
+            if ($kyc->mobile_status !== 'true') {
+                $incompleteSteps[] = 'Mobile verification incomplete';
+            }
+            if ($kyc->identity_status !== 'true') {
+                $incompleteSteps[] = 'Identity verification incomplete';
+            }
+            if ($kyc->resi_address_status !== 'true') {
+                $incompleteSteps[] = 'Residential address verification incomplete';
+            }
+            if ($kyc->address_veri_status !== 'true') {
+                $incompleteSteps[] = 'Address proof verification incomplete';
+            }
+
+            if (!empty($incompleteSteps)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'KYC cannot be submitted. Please complete all steps.',
+                    'details' => $incompleteSteps
+                ], 422);
+            }
+
+            // Update final status
+            $kyc->final_status = true;
+            $kyc->status = 'Pending';
+            $kyc->updated_by = $customer->id;
+            $kyc->save();
+
+            // Response with all relevant data
+            $responseData = [
+                'status'       => $kyc->status,
+                'final_status' => $kyc->final_status,
+                'mobile_status' => $kyc->mobile_status,
+                'address_veri_status' => $kyc->address_veri_status,
+                'resi_address_status' => $kyc->resi_address_status,
+                'identity_status' => $kyc->identity_status,
+                'phone_number' => $kyc->phone_number,
+                'mobile_verified_at' => $kyc->mobile_verified_at,
+                'first_name'   => $kyc->first_name,
+                'last_name'    => $kyc->last_name,
+                'dob'          => $kyc->dob,
+                'identity_type' => $kyc->identity_type,
+                'identity_number' => $kyc->identity_number,
+                'frontimg'     => $kyc->frontimg,
+                'backimg'      => $kyc->backimg,
+                'country'      => $kyc->country,
+                'city'         => $kyc->city,
+                'address'      => $kyc->address,
+                'state'        => $kyc->state,
+                'zip_code'     => $kyc->zip_code,
+                'address_proof_type'  => $kyc->address_proof_type,
+                'address_proof_file'  => $kyc->address_proof_file,
+            ];
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'KYC final submission successful.',
+                'data'    => $responseData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
 }

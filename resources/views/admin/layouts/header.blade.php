@@ -715,6 +715,14 @@
                             </a>
                         </li>
                         @endcan
+                        @can('Order List')
+                        <li class="slide">
+                            <a href="{{route('admin.orders.index')}}" class="side-menu__item">
+                                <i class="ri-file-user-line side-menu__icon"></i>
+                                <span class="side-menu__label">Order Management</span>
+                            </a>
+                        </li>
+                        @endcan
                         @can('Transaction List')
                         <li class="slide">
                             <a href="{{route('admin.transactions.index')}}" class="side-menu__item">
