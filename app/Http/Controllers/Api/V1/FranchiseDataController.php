@@ -33,12 +33,10 @@ class FranchiseDataController extends Controller
                 ], 404);
             }
 
-            // Fetch customers with pagination
             $customers = Customer::where('ref_by', $franchise->code)
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
 
-            // Format customers
             $customers->getCollection()->transform(function ($customer) {
                 return [
                     'id'              => $customer->id,
@@ -112,7 +110,7 @@ class FranchiseDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Franchise orders retrieved successfully',
-                'data'    => $orders->items(), // ✅ Actual orders array
+                'data'    => $orders->items(),
                 'meta'    => [
                     'current_page' => $orders->currentPage(),
                     'last_page'    => $orders->lastPage(),
