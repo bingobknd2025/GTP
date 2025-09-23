@@ -25,7 +25,8 @@ class CustomerAuthController extends Controller
             'lname' => 'required|string|max:100',
             'email' => 'required|email|unique:customers',
             'password' => 'required|string|min:6|confirmed',
-            'mobile_no' => 'required|digits_between:10,15|unique:customers'
+            'mobile_no' => 'required|digits_between:10,15|unique:customers',
+            'ref_by' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -49,6 +50,7 @@ class CustomerAuthController extends Controller
                 'fname' => $customer->fname,
                 'lname' => $customer->lname,
                 'email' => $customer->email,
+                'ref_by' => $customer->ref_by,
             ]
         ], 201);
     }
@@ -76,6 +78,7 @@ class CustomerAuthController extends Controller
                 'verified_email' => (bool) $customer->email_verfied,
                 'created_at'     => $customer->created_at,
                 'updated_at'     => $customer->updated_at,
+                'ref_by'         => $customer->ref_by,
             ]
         ], 200);
     }

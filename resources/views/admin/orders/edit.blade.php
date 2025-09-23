@@ -89,6 +89,18 @@
                                         step="0.01" min="0" value="{{ $order->amount_paid }}">
                                 </div>
 
+                                <!-- Status -->
+                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                    <label for="status" class="form-label">Status:</label>
+                                    <select class="form-control" id="status" name="status" required>
+                                        <option value="Created" {{ $order->status == 'Created' ? 'selected' : '' }}>Created</option>
+                                        <option value="Gold_Recived" {{ $order->status == 'Gold_Recived' ? 'selected' : '' }}>Gold Received</option>
+                                        <option value="Order_Cancelled" {{ $order->status == 'Order_Cancelled' ? 'selected' : '' }}>Completed</option>
+                                        <option value="In_Process" {{ $order->status == 'In_Process' ? 'selected' : '' }}>Cancelled</option>
+                                        <option value="Payment_Done" {{ $order->status == 'Payment_Done' ? 'selected' : '' }}>Payment Done</option>
+                                    </select>
+                                </div>
+
                                 <!-- Before Images -->
                                 <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
                                     <div class="card custom-card">
@@ -141,21 +153,8 @@
                                     </div>
                                 </div>
 
-
-                                <!-- Status -->
-                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
-                                    <label for="status" class="form-label">Status:</label>
-                                    <select class="form-control" id="status" name="status" required>
-                                        <option value="Created" {{ $order->status == 'Created' ? 'selected' : '' }}>Created</option>
-                                        <option value="Gold_Recived" {{ $order->status == 'Gold_Recived' ? 'selected' : '' }}>Gold Received</option>
-                                        <option value="Order_Cancelled" {{ $order->status == 'Order_Cancelled' ? 'selected' : '' }}>Completed</option>
-                                        <option value="In_Process" {{ $order->status == 'In_Process' ? 'selected' : '' }}>Cancelled</option>
-                                        <option value="Payment_Done" {{ $order->status == 'Payment_Done' ? 'selected' : '' }}>Payment Done</option>
-                                    </select>
-                                </div>
-
                                 <!-- Order Note -->
-                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
+                                <div class="col-md-12">
                                     <label for="order_note" class="form-label">Order Note:</label>
                                     <textarea class="form-control" id="order_note" name="order_note">{{ $order->order_note }}</textarea>
                                 </div>

@@ -50,10 +50,10 @@
                                     <input type="number" class="form-control" id="before_melting_weight" name="before_melting_weight" step="0.0001" min="0" required>
                                 </div>
 
-                                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                                <!-- <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="after_melting_weight" class="form-label">After Melting Weight:</label>
                                     <input type="number" class="form-control" id="after_melting_weight" name="after_melting_weight" step="0.0001" min="0" required>
-                                </div>
+                                </div> -->
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="unite_price" class="form-label">Unit Price:</label>
@@ -93,7 +93,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
+                                <!-- <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12">
                                     <div class="card custom-card">
                                         <div class="card-header">
                                             <div class="card-title">
@@ -104,7 +104,7 @@
                                             <input type="file" class="multiple-filepond" id="after_image" name="after_image[]" multiple data-allow-reorder="true" data-max-file-size="3MB" data-max-files="6">
                                         </div>
                                     </div>
-                                </div>
+                                </div> -->
 
 
                                 <div class="col-xl-12">
