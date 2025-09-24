@@ -438,6 +438,54 @@ class CustomerAuthController extends Controller
         ], 200);
     }
 
+    public function getKycStatus(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            $kyc = Kyc::where('customer_id', $customer->id)->first();
+
+            if (!$kyc) {
+                return response()->json([
+                    'status'  => true,
+                    'message' => 'No KYC data found.',
+                    'data'    => [
+                        'identity_status'      => 'false',
+                        'resi_address_status'  => 'false',
+                        'address_veri_status'  => 'false',
+                        'mobile_status'        => 'false',
+                    ]
+                ], 200);
+            }
+
+            $statusData = [
+                'identity_status'      => $kyc->identity_status ?? 'false',
+                'resi_address_status'  => $kyc->resi_address_status ?? 'false',
+                'address_veri_status'  => $kyc->address_veri_status ?? 'false',
+                'mobile_status'        => $kyc->mobile_status ?? 'false',
+            ];
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'KYC status fetched successfully.',
+                'data'    => $statusData
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function submitIdentity(Request $request)
     {
         try {
@@ -459,7 +507,6 @@ class CustomerAuthController extends Controller
                 ], 422);
             }
 
-            // JWT authentication
             try {
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
@@ -469,13 +516,19 @@ class CustomerAuthController extends Controller
                 ], 401);
             }
 
-            // file upload
+            $is_existingKyc = Kyc::where('customer_id', $customer->id)->first();
+            if ($is_existingKyc && $is_existingKyc->identity_status === 'true') {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Identity already submitted and verified.'
+                ], 403);
+            }
+
             $frontPath = $request->file('frontimg')->store('kyc_docs', 'public');
             $backPath  = $request->hasFile('backimg')
                 ? $request->file('backimg')->store('kyc_docs', 'public')
                 : null;
 
-            // save/update KYC
             $kyc = Kyc::updateOrCreate(
                 ['customer_id' => $customer->id],
                 [
@@ -491,7 +544,6 @@ class CustomerAuthController extends Controller
                 ]
             );
 
-            // sirf updated fields response me bhejna
             $updatedData = [
                 'first_name'      => $kyc->first_name,
                 'last_name'       => $kyc->last_name,

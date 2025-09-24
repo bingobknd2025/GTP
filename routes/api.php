@@ -22,10 +22,13 @@ Route::middleware('api.key')->group(function () {
                 Route::post('verify-otp', [CustomerAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [CustomerAuthController::class, 'resendOtp']);
 
-                // Kyc API
-                Route::post('kyc/stauts', [CustomerAuthController::class, 'kycstatus']);
+                // Online KYC API
+                Route::post('kyc/status', [CustomerAuthController::class, 'kycstatus']);
                 Route::post('kyc/access-token', [CustomerAuthController::class, 'getAccessToken']);
                 Route::post('kyc/webhook', [CustomerAuthController::class, 'handleWebhook']);
+
+                // Offline KYC APIs
+                Route::post('kyc/get-status', [CustomerAuthController::class, 'getKycStatus']);
                 Route::post('kyc/submit-identity', [CustomerAuthController::class, 'submitIdentity']);
                 Route::post('kyc/submit-residential', [CustomerAuthController::class, 'submitResidentialAddress']);
                 Route::post('kyc/submit-address', [CustomerAuthController::class, 'submitAddressProof']);
@@ -37,10 +40,13 @@ Route::middleware('api.key')->group(function () {
                 Route::post('orders-list', [CustomerDataController::class, 'listOrders']);
                 Route::post('order-details', [CustomerDataController::class, 'orderDetails']);
 
+                // Profile APIs
+                Route::post('profile', [CustomerDataController::class, 'getProfile']);
+                Route::post('profile-update', [CustomerDataController::class, 'updateProfile']);
+                Route::post('change-password', [CustomerDataController::class, 'changePassword']);
 
-                Route::get('profile', function () {
-                    return auth('customer')->user();
-                });
+
+
                 Route::post('logout', [CustomerAuthController::class, 'logout']);
             });
         });
