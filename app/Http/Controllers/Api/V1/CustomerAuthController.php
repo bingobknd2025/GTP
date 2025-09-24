@@ -842,4 +842,116 @@ class CustomerAuthController extends Controller
             ], 500);
         }
     }
+
+    public function requestChangePasswordOtp(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            // Validate current password first
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required|string|min:6',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            if (!Hash::check($request->current_password, $customer->password)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Current password is incorrect'
+                ], 400);
+            }
+
+            // Generate & send OTP
+            OtpHelper::generateAndSendOtp($customer, 'change_password');
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'OTP sent to your registered email for verification.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function changePassword(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            // Validate input
+            $validator = Validator::make($request->all(), [
+                'type'             => 'required|string|in:change_password',
+                'current_password' => 'required|string|min:6',
+                'new_password'     => 'required|string|min:6|confirmed',
+                'otp'              => 'required|digits:6', // Assuming OTP = 6 digits
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            // Check old password
+            if (!Hash::check($request->current_password, $customer->password)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Current password is incorrect'
+                ], 400);
+            }
+
+            $otpData = Otp::where('customer_id', $customer->id)
+                ->where('type', $request->type)
+                ->where('otp', $request->otp)
+                ->first();
+
+            if (!$otpData) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid OTP'
+                ], 400);
+            }
+
+            if (now()->greaterThan($otpData->expires_at)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'OTP expired'
+                ], 400);
+            }
+
+            // Update password
+            $customer->password = Hash::make($request->new_password);
+            $customer->save();
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Password changed successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
 }

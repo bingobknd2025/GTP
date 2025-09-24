@@ -43,7 +43,9 @@ Route::middleware('api.key')->group(function () {
                 // Profile APIs
                 Route::post('profile', [CustomerDataController::class, 'getProfile']);
                 Route::post('profile-update', [CustomerDataController::class, 'updateProfile']);
-                Route::post('change-password', [CustomerDataController::class, 'changePassword']);
+                Route::post('change-password-otp', [CustomerAuthController::class, 'requestChangePasswordOtp']);
+                Route::post('change-password', [CustomerAuthController::class, 'changePassword']);
+
 
 
 
