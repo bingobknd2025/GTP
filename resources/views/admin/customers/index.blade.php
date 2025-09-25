@@ -16,11 +16,9 @@
          </div>
          <div class="page-title fw-semibold fs-18 mb-0">
             <div>
-                @can('Customer Add')
-               <a href="{{route('admin.customers.create')}}" class="btn bg-warning-transparent text-warning btn-sm" data-bs-toggle="tooltip" title="" data-bs-placement="bottom" data-bs-original-title="Add New">
-               <span>
-               <i class="fa fa-plus"></i>
-               </span>
+               @can('Customer Add')
+               <a href="{{route('admin.customers.create')}}" class="btn bg-warning-transparent text-warning btn-sm" data-bs-toggle="tooltip" title="Add New">
+                  <span><i class="fa fa-plus"></i></span>
                </a>
                @endcan
             </div>
@@ -35,15 +33,16 @@
                         <thead>
                            <tr>
                               <th><span>Customer ID</span></th>
+                              <th><span>Customer Name</span></th>
                               <th><span>KYC ID</span></th>
                               <th><span>Franchise Name</span></th>
-                              <th><span>First Name</span></th>
-                              <th><span>Last Name</span></th>
                               <th><span>Email</span></th>
                               <th><span>Mobile No.</span></th>
-                              <th><span>Status</span></th>
+                              <th><span>Country</span></th>
                               <th><span>Email Verified</span></th>
                               <th><span>Mobile Verified</span></th>
+                              <th><span>KYC Status</span></th>
+                              <th><span>Status</span></th>
                               <th>Action</th>
                            </tr>
                         </thead>
@@ -62,116 +61,118 @@
 
 <script>
    $.ajaxSetup({
-    headers: {
-        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-    }
-});
+      headers: {
+         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+      }
+   });
 
-// Configure Toastr options globally
-toastr.options = {
-    "closeButton": true,
-    "progressBar": true,
-    "positionClass": "toast-top-right",
-    "showDuration": "300",
-    "hideDuration": "1000",
-    "timeOut": "5000",
-    "extendedTimeOut": "1000",
-    "showEasing": "swing",
-    "hideEasing": "linear",
-    "showMethod": "fadeIn",
-    "hideMethod": "fadeOut",
-    "onShown": function () { console.log('Toastr message shown.'); },
-    "onHidden": function () { console.log('Toastr message hidden.'); }
-};
+   toastr.options = {
+      "closeButton": true,
+      "progressBar": true,
+      "positionClass": "toast-top-right",
+      "timeOut": "5000",
+   };
 
-$(document).ready(function() {
-    var table = $('#responsiveDataTable').DataTable({
-        processing: true,
-        serverSide: true,
-        responsive: true,
-        ajax: "{{ route('admin.customers.index') }}",
-        columns: [
-          { data: 'id', name: 'id' },
-          { data: 'kyc_id', name: 'kyc_id' },
-          { data: 'franchise_name', name: 'franchise_name', orderable: false, searchable: false }, // From relationship
-          { data: 'fname', name: 'fname' },
-          { data: 'lname', name: 'lname' },
-          { data: 'email', name: 'email' },
-          { data: 'mobile_no', name: 'mobile_no' },
-          { data: 'status', name: 'status', render: function(data, type, row) {
-                let statusText = data ? 'Active' : 'Inactive';
-                let statusClass = data ? 'btn-success' : 'btn-danger';
-                return '<span class="btn btn-sm ' + statusClass + '">' + statusText + '</span>';
-            } },
-          { data: 'email_verfied', name: 'email_verfied', render: function(data, type, row) {
-                let verifiedText = data ? 'Verified' : 'Unverified';
-                let verifiedClass = data ? 'btn-success' : 'btn-danger';
-                return '<span class="btn btn-sm ' + verifiedClass + '">' + verifiedText + '</span>';
-            } },
-          { data: 'mobile_verfied', name: 'mobile_verfied', render: function(data, type, row) {
-                let verifiedText = data ? 'Verified' : 'Unverified';
-                let verifiedClass = data ? 'btn-success' : 'btn-danger';
-                return '<span class="btn btn-sm ' + verifiedClass + '">' + verifiedText + '</span>';
-            } },
-          { data: 'action', name: 'action', orderable: false, searchable: false, render: function(data, type, row) {
-                    let btn = '';
-                    let editUrl = "{{ route('admin.customers.edit', 'ID_PLACEHOLDER') }}".replace('ID_PLACEHOLDER', row.id);
-                    let deleteUrl = "{{ route('admin.customers.destroy', 'ID_PLACEHOLDER') }}".replace('ID_PLACEHOLDER', row.id);
-                    let showUrl = "{{ route('admin.customers.show', 'ID_PLACEHOLDER') }}".replace('ID_PLACEHOLDER', row.id);
+   $(document).ready(function() {
+      var table = $('#responsiveDataTable').DataTable({
+         processing: true,
+         serverSide: true,
+         responsive: true,
+         ajax: "{{ route('admin.customers.index') }}",
+         columns: [{
+               data: 'id',
+               name: 'id'
+            },
+            {
+               data: 'customer_name',
+               name: 'customer_name'
+            },
+            {
+               data: 'kyc_id',
+               name: 'kyc_id'
+            },
+            {
+               data: 'franchise_name',
+               name: 'franchise_name',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'email',
+               name: 'email'
+            },
+            {
+               data: 'mobile_no',
+               name: 'mobile_no'
+            },
+            {
+               data: 'country',
+               name: 'country'
+            },
+            {
+               data: 'email_verfied',
+               name: 'email_verfied',
+               render: function(data) {
+                  let verifiedText = data ? 'Verified' : 'Unverified';
+                  let verifiedClass = data ? 'btn-success' : 'btn-danger';
+                  return '<span class="btn btn-sm ' + verifiedClass + '">' + verifiedText + '</span>';
+               }
+            },
+            {
+               data: 'mobile_verfied',
+               name: 'mobile_verfied',
+               render: function(data) {
+                  let verifiedText = data ? 'Verified' : 'Unverified';
+                  let verifiedClass = data ? 'btn-success' : 'btn-danger';
+                  return '<span class="btn btn-sm ' + verifiedClass + '">' + verifiedText + '</span>';
+               }
+            },
+            {
+               data: 'kyc_status',
+               name: 'kyc_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'status',
+               name: 'status',
+            },
+            {
+               data: 'action',
+               name: 'action',
+               orderable: false,
+               searchable: false
+            }
+         ]
+      });
 
-                    @can('Customer Edit')
-                    btn += '<a href="' + editUrl + '" class="btn btn-sm btn-primary me-1" title="Edit"><i class="fas fa-edit"></i></a>';
-                    @endcan
+      // Delete Handler
+      $('#responsiveDataTable').on('submit', '.delete-customer-form', function(e) {
+         e.preventDefault();
 
-                    @can('Customer Delete')
-                    btn += '<form action="' + deleteUrl + '" method="POST" class="delete-customer-form" style="display:inline;">' +
-                           '{{ csrf_field() }}' +
-                           '{{ method_field('DELETE') }}' +
-                           '<button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash-alt"></i></button>' +
-                           '</form>';
-                    @endcan
+         let form = $(this);
+         let url = form.attr('action');
 
-                    @can('Customer View')
-                    btn += '<a href="' + showUrl + '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye"></i></a>';
-                    @endcan
-                    
-                    return btn;
-                } }
-          ]
-        });
-
-    $('#responsiveDataTable').on('submit', '.delete-customer-form', function(e) {
-        e.preventDefault();
-
-        let form = $(this);
-        let url = form.attr('action');
-
-        if (confirm('Are you sure to delete this customer?')) {
+         if (confirm('Are you sure to delete this customer?')) {
             $.ajax({
-                url: url,
-                type: 'POST',
-                data: form.serialize(), // Send form data including _token and _method
-                success: function(response) {
-                    console.log('Delete successful:', response);
-                    if (response.success) {
-                        console.log('Attempting to display Toastr success message...');
-                        toastr.success(response.message || 'Customer deleted successfully!');
-                        console.log('Initiating full page reload...');
-                        window.location.reload(); // Reload the entire page immediately
-                    } else {
-                        toastr.error(response.message || 'Failed to delete customer.');
-                    }
-                },
-                error: function(xhr) {
-                    toastr.error(xhr.responseJSON.message || 'An error occurred. Please try again.');
-                    console.error('AJAX Error:', xhr.responseText);
-                }
+               url: url,
+               type: 'POST',
+               data: form.serialize(),
+               success: function(response) {
+                  if (response.success) {
+                     toastr.success(response.message || 'Customer deleted successfully!');
+                     table.ajax.reload(null, false);
+                  } else {
+                     toastr.error(response.message || 'Failed to delete customer.');
+                  }
+               },
+               error: function(xhr) {
+                  toastr.error(xhr.responseJSON?.message || 'An error occurred. Please try again.');
+               }
             });
-        }
-    });
-
-});
-
+         }
+      });
+   });
 </script>
 
-@endsection
+@endsectiony

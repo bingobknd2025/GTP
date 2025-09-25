@@ -34,7 +34,6 @@ class Customer extends Authenticatable implements JWTSubject
     ];
 
     protected $casts = [
-        'status' => 'boolean',
         'email_verfied' => 'boolean',
         'mobile_verfied' => 'boolean',
     ];

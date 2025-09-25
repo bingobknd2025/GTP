@@ -14,6 +14,54 @@ use Illuminate\Support\Facades\Validator;
 
 class FranchiseDataController extends Controller
 {
+    public function dashboard()
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
+                ], 404);
+            }
+
+            $franchiseId = $franchise->id;
+
+            $franchise = Franchise::find($franchiseId);
+            $totalCustomers = Customer::where('ref_by', $franchise->code)->count();
+            $totalOrders = Order::where('franchise_id', $franchiseId)->count();
+            $Orders = Order::where('franchise_id', $franchiseId)->get();
+            $totalRevenue = Order::where('franchise_id', $franchiseId)->sum('amount_paid');
+            $ref_link = url('/register?ref=' . $franchise->code);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Dashboard data retrieved successfully',
+                'data'    => [
+                    'ref_link'        => $ref_link,
+                    'total_customers' => $totalCustomers,
+                    'total_orders'    => $totalOrders,
+                    'total_revenue'   => $totalRevenue,
+                    'franchise'  => $franchise,
+                    'orders'     => $Orders,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getCustomers(Request $request)
     {
         try {

@@ -59,6 +59,8 @@ Route::middleware('api.key')->group(function () {
             Route::post('login', [FranchiseAuthController::class, 'login']);
 
             Route::middleware('auth:franchise')->group(function () {
+
+                Route::post('dashboard', [FranchiseDataController::class, 'dashboard']);
                 // OTP API
                 Route::post('verify-otp', [FranchiseAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [FranchiseAuthController::class, 'resendOtp']);
