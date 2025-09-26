@@ -40,7 +40,7 @@ class FranchiseDataController extends Controller
             $totalOrders = Order::where('franchise_id', $franchiseId)->count();
             $Orders = Order::where('franchise_id', $franchiseId)->get();
             $totalRevenue = Order::where('franchise_id', $franchiseId)->sum('amount_paid');
-            $ref_link = url('/register?ref=' . $franchise->code);
+            $ref_link = 'http://localhost:5173/customer/register?ref=' . $franchise->code;
 
             return response()->json([
                 'status'  => 'success',

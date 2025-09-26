@@ -22,6 +22,82 @@ use Illuminate\Support\Facades\Validator;
 class CustomerDataController extends Controller
 {
 
+    public function dashboard()
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+
+            $customerId = $customer->id;
+
+            $customer = Customer::find($customerId);
+            $totalOrders = Order::where('customer_id', $customerId)->count();
+            $Orders = Order::where('customer_id', $customerId)->get();
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Dashboard data retrieved successfully',
+                'data'    => [
+                    'total_orders' => $totalOrders,
+                    'account_balance' => $customer->account_balance,
+                    'amount_paid' => $Orders->sum('amount_paid'),
+                    'customer'     => $customer,
+                    'orders'       => $Orders,
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getProfile(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Customer profile retrieved successfully',
+                'data'    => $customer
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getFranchises(Request $request)
     {
         try {

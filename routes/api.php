@@ -18,6 +18,7 @@ Route::middleware('api.key')->group(function () {
             Route::post('login', [CustomerAuthController::class, 'login']);
 
             Route::middleware('auth:customer')->group(function () {
+
                 // OTP API
                 Route::post('verify-otp', [CustomerAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [CustomerAuthController::class, 'resendOtp']);
@@ -34,6 +35,8 @@ Route::middleware('api.key')->group(function () {
                 Route::post('kyc/submit-address', [CustomerAuthController::class, 'submitAddressProof']);
                 Route::post('kyc/submit-mobile', [CustomerAuthController::class, 'submitMobile']);
                 Route::post('kyc/submit-final', [CustomerAuthController::class, 'finalSubmit']);
+
+                Route::post('dashboard', [CustomerDataController::class, 'dashboard']);
 
                 // Order APIs
                 Route::post('order-create', [CustomerDataController::class, 'createOrder']);
