@@ -16,6 +16,9 @@ Route::middleware('api.key')->group(function () {
         Route::prefix('customer')->group(function () {
             Route::post('register', [CustomerAuthController::class, 'register']);
             Route::post('login', [CustomerAuthController::class, 'login']);
+            Route::post('forgot-password', [CustomerAuthController::class, 'forgotPassword']);
+            Route::post('resend-forgot-password', [CustomerAuthController::class, 'resendForgotPasswordOtp']);
+            Route::post('reset-password', [CustomerAuthController::class, 'resetPassword']);
 
             Route::middleware('auth:customer')->group(function () {
 
@@ -34,6 +37,8 @@ Route::middleware('api.key')->group(function () {
                 Route::post('kyc/submit-residential', [CustomerAuthController::class, 'submitResidentialAddress']);
                 Route::post('kyc/submit-address', [CustomerAuthController::class, 'submitAddressProof']);
                 Route::post('kyc/submit-mobile', [CustomerAuthController::class, 'submitMobile']);
+                Route::post('kyc/send-firebase-otp', [CustomerAuthController::class, 'sendFirebaseOtp']);
+                Route::post('kyc/verify-firebase-otp', [CustomerAuthController::class, 'verifyFirebaseOtp']);
                 Route::post('kyc/submit-final', [CustomerAuthController::class, 'finalSubmit']);
 
                 Route::post('dashboard', [CustomerDataController::class, 'dashboard']);
@@ -68,6 +73,11 @@ Route::middleware('api.key')->group(function () {
                 Route::post('verify-otp', [FranchiseAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [FranchiseAuthController::class, 'resendOtp']);
                 Route::post('logout', [FranchiseAuthController::class, 'logout']);
+
+                // KYC Management APIs
+                Route::post('kyc-list', [FranchiseDataController::class, 'getKycList']);
+                Route::post('kyc-details', [FranchiseDataController::class, 'kycDetails']);
+                Route::post('kyc-update-status', [FranchiseDataController::class, 'updateKycStatus']);
 
                 // Customer Management APIs
                 Route::post('customers-list', [FranchiseDataController::class, 'getCustomers']);

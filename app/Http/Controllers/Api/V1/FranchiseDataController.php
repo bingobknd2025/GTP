@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Helpers\OtpHelper;
 use App\Models\Customer;
 use App\Models\Franchise;
+use App\Models\Kyc;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -170,6 +171,148 @@ class FranchiseDataController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getKycList(Request $request)
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
+                ], 404);
+            }
+
+            $franchiseCode = $franchise->code;
+
+            $customerIds = Customer::where('ref_by', $franchiseCode)->pluck('id')->toArray();
+
+            if (empty($customerIds)) {
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => 'No KYC records found for your referrals.',
+                    'data'    => [],
+                    'meta'    => [
+                        'current_page' => 1,
+                        'last_page'    => 1,
+                        'per_page'     => 10,
+                        'total'        => 0,
+                        'has_more'     => false
+                    ]
+                ]);
+            }
+
+            $kycList = Kyc::whereIn('customer_id', $customerIds)
+                ->orderBy('created_at', 'desc')
+                ->paginate(10, [
+                    'id',
+                    'customer_id',
+                    'first_name',
+                    'last_name',
+                    'email',
+                    'country_code',
+                    'phone_number',
+                    'kyc_type',
+                    'identity_type',
+                    'identity_status',
+                    'final_status',
+                    'status',
+                    'franchise_status',
+                    'admin_status',
+                    'created_at'
+                ]);
+
+            // Format response
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'KYC list retrieved successfully',
+                'data'    => $kycList->items(),
+                'meta'    => [
+                    'current_page' => $kycList->currentPage(),
+                    'last_page'    => $kycList->lastPage(),
+                    'per_page'     => $kycList->perPage(),
+                    'total'        => $kycList->total(),
+                    'has_more'     => $kycList->hasMorePages()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function kycDetails(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'kyc_id' => 'required|integer|exists:kycs,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation Error',
+                'errors'  => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
+                ], 404);
+            }
+
+            $kycId = $request->input('kyc_id');
+
+            $kyc = Kyc::find($kycId);
+
+            if (!$kyc) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'KYC record not found'
+                ], 404);
+            }
+
+            $customer = Customer::find($kyc->customer_id);
+            if ($customer->ref_by !== $franchise->code) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'You do not have permission to view this KYC record'
+                ], 403);
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'KYC details retrieved successfully',
+                'data'    => $kyc
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
                 'message' => $e->getMessage()
             ], 500);
         }

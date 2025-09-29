@@ -81,6 +81,7 @@ class FranchiseAuthController extends Controller
                 'name'           => $franchise->name,
                 'email'          => $franchise->email,
                 'verified_email' => (bool) $franchise->is_verified,
+                'ref_code'       => $franchise->code,
                 'created_at'     => $franchise->created_at,
                 'updated_at'     => $franchise->updated_at,
             ]

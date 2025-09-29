@@ -8,10 +8,12 @@ use App\Models\Customer;
 use App\Models\Franchise;
 use App\Models\Kyc;
 use App\Models\Otp;
+use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -19,42 +21,13 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomerAuthController extends Controller
 {
-    // public function register(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'fname' => 'required|string|max:100',
-    //         'lname' => 'required|string|max:100',
-    //         'email' => 'required|email|unique:customers',
-    //         'password' => 'required|string|min:6|confirmed',
-    //         'mobile_no' => 'required|digits_between:10,15|unique:customers',
-    //         'ref_by' => 'nullable|string|max:100',
-    //     ]);
 
-    //     if ($validator->fails()) {
-    //         return response()->json(['errors' => $validator->errors()], 422);
-    //     }
+    private $apiKey;
 
-    //     $data = $validator->validated();
-    //     $data['password'] = Hash::make($data['password']);
-    //     $customer = Customer::create($data);
-
-    //     $token = JWTAuth::fromUser($customer);
-
-    //     OtpHelper::generateAndSendOtp($customer, 'register');
-
-    //     return response()->json([
-    //         'status'  => 'success',
-    //         'message' => 'Customer registered successfully. OTP has been sent to your email for verification.',
-    //         'token'   => $token,
-    //         'customer' => [
-    //             'id'    => $customer->id,
-    //             'fname' => $customer->fname,
-    //             'lname' => $customer->lname,
-    //             'email' => $customer->email,
-    //             'ref_by' => $customer->ref_by,
-    //         ]
-    //     ], 201);
-    // }
+    public function __construct()
+    {
+        $this->apiKey = env('FIREBASE_API_KEY');
+    }
 
     public function register(Request $request)
     {
@@ -104,7 +77,6 @@ class CustomerAuthController extends Controller
         ], 201);
     }
 
-
     public function login(Request $request)
     {
         $credentials = $request->only('email', 'password');
@@ -132,7 +104,6 @@ class CustomerAuthController extends Controller
             ]
         ], 200);
     }
-
 
     public function verifyOtp(Request $request)
     {
@@ -182,7 +153,6 @@ class CustomerAuthController extends Controller
             'message'  => 'OTP verified successfully. Please login again to continue.',
         ], 200);
     }
-
 
     public function resendOtp(Request $request)
     {
@@ -474,8 +444,10 @@ class CustomerAuthController extends Controller
             ];
 
             return response()->json([
-                'status'  => true,
+                'status'  => 'success',
                 'message' => 'KYC status fetched successfully.',
+                'kyc_status' => $kyc->status ?? 'Not Submitted',
+                'id' => $kyc->id ?? null,
                 'data'    => $statusData
             ], 200);
         } catch (\Exception $e) {
@@ -751,6 +723,89 @@ class CustomerAuthController extends Controller
         }
     }
 
+    // Firebase OTP Integration
+    public function sendFirebaseOtp(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string'
+        ]);
+
+        // Check auth token
+        try {
+            $customer = JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid or missing token'
+            ], 401);
+        }
+
+        // Ensure phone is in E.164 format
+        $phone = $request->phone;
+        if (!preg_match('/^\+[1-9]\d{7,14}$/', $phone)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Phone number must be in E.164 format. Example: +919355910745'
+            ], 422);
+        }
+
+        $url = "https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=" . $this->apiKey;
+
+        $response = Http::post($url, [
+            "phoneNumber"    => $phone,
+            "recaptchaToken" => "ignored-in-test-mode" // required but ignored in test numbers
+        ]);
+
+        if ($response->failed()) {
+            $error = $response->json();
+            return response()->json([
+                'status'  => 'error',
+                'message' => $error['error']['message'] ?? 'Something went wrong',
+                'details' => $error['error']['errors'] ?? []
+            ], $error['error']['code'] ?? 400);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'OTP sent successfully',
+            'data'    => $response->json()
+        ]);
+    }
+
+    // Step 2: Verify OTP
+    public function verifyFirebaseOtp(Request $request)
+    {
+        $request->validate([
+            'sessionInfo' => 'required|string',
+            'code' => 'required|string'
+        ]);
+
+        $url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key=" . $this->apiKey;
+
+        $response = Http::post($url, [
+            "sessionInfo" => $request->sessionInfo,
+            "code" => $request->code
+        ]);
+
+        if ($response->failed()) {
+            return response()->json($response->json(), 400);
+        }
+
+        $data = $response->json();
+
+        // Store verified phone in DB
+        $user = auth()->user();
+        $user->phone = $data['phoneNumber'] ?? null;
+        $user->phone_verified_at = now();
+        $user->save();
+
+        return response()->json([
+            "status" => "success",
+            "message" => "Phone verified successfully",
+            "firebase" => $data
+        ]);
+    }
+
     public function finalSubmit(Request $request)
     {
         try {
@@ -802,12 +857,60 @@ class CustomerAuthController extends Controller
             $kyc->final_status = true;
             $kyc->status = 'Pending';
             $kyc->updated_by = $customer->id;
+            $kyc->email = $customer->email;
+            $kyc->mobile_verified_at = now();
             $kyc->save();
+
+            // Customer Email
+            Mail::send('emails.kyc_submission', [
+                'title' => 'KYC Final Submission Received',
+                'heading' => 'KYC Submitted Successfully!',
+                'bodyMessage' => 'Your KYC has been successfully submitted and is now under review. We will notify you once the verification process is complete.',
+                'customer' => $customer,
+            ], function ($m) use ($customer) {
+                $m->to($customer->email, $customer->fname)
+                    ->subject('KYC Final Submission Received')
+                    ->from(config('mail.from.address'), config('mail.from.name'));
+            });
+
+            // Franchise Email
+            if ($customer->franchise_id) {
+                $franchise = Franchise::find($customer->franchise_id);
+                if ($franchise && $franchise->email) {
+                    Mail::send('emails.kyc_submission', [
+                        'title' => 'KYC Submission by Referred Customer',
+                        'heading' => 'New KYC Submission',
+                        'bodyMessage' => "A KYC submission has been made by your referred customer {$customer->fname} {$customer->lname}. Please review it in your dashboard.",
+                        'customer' => $customer,
+                        'franchise' => $franchise
+                    ], function ($m) use ($franchise) {
+                        $m->to($franchise->email, $franchise->name)
+                            ->subject('KYC Submission by Referred Customer')
+                            ->from(config('mail.from.address'), config('mail.from.name'));
+                    });
+                }
+            }
+
+            $mainSettings = Setting::first(); // your main settings table
+
+            if ($mainSettings && $mainSettings->mail_from_email) {
+                Mail::send('emails.kyc_submission', [
+                    'title' => 'New KYC Submission for Review',
+                    'heading' => 'New KYC Submission',
+                    'bodyMessage' => "A new KYC submission has been received from {$customer->fname} {$customer->lname}. Please review and process it at your earliest convenience.",
+                    'customer' => $customer,
+                    'dashboardUrl' => route('admin.dashboard')
+                ], function ($message) use ($mainSettings) {
+                    $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                        ->subject('New KYC Submission for Review')
+                        ->from($mainSettings->mail_from_email, $mainSettings->mail_from_name);
+                });
+            }
 
             // Response with all relevant data
             $responseData = [
-                'status'       => $kyc->status,
-                'final_status' => $kyc->final_status,
+                'id'           => $kyc->id,
+                'customer_id'  => $kyc->customer_id,
                 'mobile_status' => $kyc->mobile_status,
                 'address_veri_status' => $kyc->address_veri_status,
                 'resi_address_status' => $kyc->resi_address_status,
@@ -816,6 +919,7 @@ class CustomerAuthController extends Controller
                 'mobile_verified_at' => $kyc->mobile_verified_at,
                 'first_name'   => $kyc->first_name,
                 'last_name'    => $kyc->last_name,
+                'email'       => $kyc->email,
                 'dob'          => $kyc->dob,
                 'identity_type' => $kyc->identity_type,
                 'identity_number' => $kyc->identity_number,
@@ -831,8 +935,12 @@ class CustomerAuthController extends Controller
             ];
 
             return response()->json([
-                'status'  => true,
+                'status'  => 'success',
                 'message' => 'KYC final submission successful.',
+                'kyc_status' => $kyc->status,
+                'final_status' => $kyc->final_status,
+                'franchise_status' => $kyc->franchise_status,
+                'admin_status' => $kyc->admin_status,
                 'data'    => $responseData
             ], 200);
         } catch (\Exception $e) {
@@ -954,5 +1062,128 @@ class CustomerAuthController extends Controller
                 'error'   => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:customers,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $customer = Customer::where('email', $request->email)->first();
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found with this email.'
+            ], 404);
+        }
+
+        OtpHelper::generateAndSendOtp($customer, 'forgot_password');
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'OTP has been sent to your email for password reset.'
+        ], 200);
+    }
+
+    public function resendForgotPasswordOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:customers,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $customer = Customer::where('email', $request->email)->first();
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found with this email.'
+            ], 404);
+        }
+
+        // Invalidate previous OTPs for forgot_password
+        Otp::where('customer_id', $customer->id)
+            ->where('type', 'forgot_password')
+            ->delete();
+
+        // Generate & send new OTP with same type
+        OtpHelper::generateAndSendOtp($customer, 'forgot_password');
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'A new OTP has been sent to your email for password reset.'
+        ], 200);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email'        => 'required|email|exists:customers,email',
+            'otp'          => 'required|digits:6',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $customer = Customer::where('email', $request->email)->first();
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found with this email.'
+            ], 404);
+        }
+
+        $otpData = Otp::where('customer_id', $customer->id)
+            ->where('type', 'forgot_password')
+            ->where('otp', $request->otp)
+            ->first();
+
+        if (!$otpData) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid OTP.'
+            ], 400);
+        }
+
+        if (now()->greaterThan($otpData->expires_at)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'OTP has expired. Please request a new one.'
+            ], 400);
+        }
+
+        $customer->password = Hash::make($request->new_password);
+        $customer->save();
+
+        $otpData->delete();
+
+        Mail::raw("Your password has been reset successfully.", function ($m) use ($customer) {
+            $m->to($customer->email, $customer->fname)
+                ->subject('Password Reset Successful')
+                ->from(config('mail.from.address'), config('mail.from.name'));
+        });
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Password has been reset successfully. You can now login with your new password.'
+        ], 200);
     }
 }
