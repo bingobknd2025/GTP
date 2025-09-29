@@ -673,7 +673,7 @@ class CustomerAuthController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'phone_number' => 'required|string|max:15',
+                'phone_number' => 'required|string|max:15|unique:customers,mobile_no',
             ]);
 
             if ($validator->fails()) {
@@ -809,7 +809,6 @@ class CustomerAuthController extends Controller
     public function finalSubmit(Request $request)
     {
         try {
-            // JWT authentication
             try {
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
@@ -819,7 +818,6 @@ class CustomerAuthController extends Controller
                 ], 401);
             }
 
-            // Fetch the customer's KYC record
             $kyc = Kyc::where('customer_id', $customer->id)->first();
 
             if (!$kyc) {
@@ -829,7 +827,21 @@ class CustomerAuthController extends Controller
                 ], 404);
             }
 
-            // Check if all required statuses are true
+            if ($kyc->final_status === 'true' || $kyc->franchise_status === 'true' || $kyc->admin_status === 'true') {
+                $message = 'KYC cannot be submitted.';
+                if ($kyc->final_status === 'true') {
+                    $message = 'KYC has already been finally submitted and is under review.';
+                } elseif ($kyc->franchise_status === 'true') {
+                    $message = 'KYC has already been approved by Franchise and is under Admin review.';
+                } elseif ($kyc->admin_status === 'true') {
+                    $message = 'KYC has already been approved by Admin.';
+                }
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $message
+                ], 422);
+            }
+
             $incompleteSteps = [];
 
             if ($kyc->mobile_status !== 'true') {
@@ -853,13 +865,16 @@ class CustomerAuthController extends Controller
                 ], 422);
             }
 
-            // Update final status
-            $kyc->final_status = true;
+            $kyc->final_status = 'true';
             $kyc->status = 'Pending';
             $kyc->updated_by = $customer->id;
             $kyc->email = $customer->email;
             $kyc->mobile_verified_at = now();
+            $kyc->source = 'APP';
             $kyc->save();
+
+            $customer->kyc_id = $kyc->id;
+            $customer->save();
 
             // Customer Email
             Mail::send('emails.kyc_submission', [
@@ -891,8 +906,8 @@ class CustomerAuthController extends Controller
                 }
             }
 
-            $mainSettings = Setting::first(); // your main settings table
-
+            // Admin Email
+            $mainSettings = Setting::first();
             if ($mainSettings && $mainSettings->mail_from_email) {
                 Mail::send('emails.kyc_submission', [
                     'title' => 'New KYC Submission for Review',
@@ -907,7 +922,6 @@ class CustomerAuthController extends Controller
                 });
             }
 
-            // Response with all relevant data
             $responseData = [
                 'id'           => $kyc->id,
                 'customer_id'  => $kyc->customer_id,
@@ -941,6 +955,7 @@ class CustomerAuthController extends Controller
                 'final_status' => $kyc->final_status,
                 'franchise_status' => $kyc->franchise_status,
                 'admin_status' => $kyc->admin_status,
+                'source' => $kyc->source ?? 'WEB',
                 'data'    => $responseData
             ], 200);
         } catch (\Exception $e) {
