@@ -12,6 +12,7 @@ use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 class KycController extends Controller
@@ -64,6 +65,61 @@ class KycController extends Controller
 
         return view('admin.kycs.index');
     }
+
+    // public function index(Request $request)
+    // {
+    //     if ($request->ajax()) {
+    //         $data = Kyc::with('customer')->orderBy('id', 'DESC')->get();
+
+    //         return DataTables::of($data)
+    //             ->addIndexColumn()
+    //             ->addColumn('customer_name', function ($row) {
+    //                 return $row->customer ? $row->customer->fname . ' ' . $row->customer->lname : 'N/A';
+    //             })
+    //             ->addColumn('status', function ($row) {
+    //                 $statusText = 'Pending';
+    //                 $statusClass = 'badge bg-warning';
+
+    //                 if ($row->status === 'Rejected' || (int)$row->status === 2) {
+    //                     $statusText = 'Rejected';
+    //                     $statusClass = 'badge bg-danger';
+    //                 } elseif ($row->admin_status === 'true') {
+    //                     $statusText = 'Approved by Admin';
+    //                     $statusClass = 'badge bg-success';
+    //                 } elseif ($row->franchise_status === 'true' && $row->final_status === 'true') {
+    //                     $statusText = 'Under Admin Review';
+    //                     $statusClass = 'badge bg-primary';
+    //                 } elseif ($row->final_status === 'true') {
+    //                     $statusText = 'Under Franchise Review';
+    //                     $statusClass = 'badge bg-info';
+    //                 } else {
+    //                     $statusText = 'Incomplete / Pending';
+    //                     $statusClass = 'badge bg-secondary';
+    //                 }
+
+    //                 return '<span class="' . $statusClass . '">' . $statusText . '</span>';
+    //             })
+    //             ->addColumn('action', function ($row) {
+    //                 $btn = '';
+    //                 $editUrl = route('admin.kycs.edit', $row->id);
+    //                 $deleteUrl = route('admin.kycs.destroy', $row->id);
+    //                 $showUrl = route('admin.kycs.show', $row->id);
+
+    //                 $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-primary me-1" title="Edit"><i class="fas fa-edit fw-bold"></i></a>';
+    //                 $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline me-1">'
+    //                     . csrf_field() . method_field('DELETE')
+    //                     . '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure to delete this KYC entry?\')" title="Delete"><i class="fas fa-trash-alt fw-bold"></i></button></form>';
+    //                 $btn .= '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye fw-bold"></i></a>';
+
+    //                 return $btn;
+    //             })
+    //             ->rawColumns(['customer_name', 'status', 'action'])
+    //             ->make(true);
+    //     }
+
+    //     return view('admin.kycs.index');
+    // }
+
 
     public function create(): View
     {
@@ -183,6 +239,117 @@ class KycController extends Controller
             'data'    => $kyc
         ], 201);
     }
+
+    // public function store(Request $request): JsonResponse
+    // {
+    //     try {
+    //         $validator = Validator::make($request->all(), [
+    //             // Identity
+    //             'first_name'      => 'required|string|max:255',
+    //             'last_name'       => 'required|string|max:255',
+    //             'dob'             => 'required|date',
+    //             'identity_type'   => 'required|in:Aadhar,PAN,Passport,VoterID,DrivingLicense',
+    //             'identity_number' => 'required|string|max:50',
+    //             'frontimg'        => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+    //             'backimg'         => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+
+    //             // Residential Address
+    //             'country'   => 'required|string|max:255',
+    //             'city'      => 'required|string|max:255',
+    //             'address'   => 'required|string|max:500',
+    //             'state'     => 'required|string|max:255',
+    //             'zip_code'  => 'required|string|max:20',
+
+    //             // Address Proof
+    //             'address_proof_type' => 'required|in:Utility Bill,Rent Agreement,Bank Statement,Voter ID',
+    //             'address_proof_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+
+    //             // Mobile
+    //             'phone_number' => 'required|string|max:15|unique:customers,mobile_no',
+
+    //             // Required
+    //             'customer_id' => 'required|exists:customers,id',
+    //         ]);
+
+    //         if ($validator->fails()) {
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'Validation errors',
+    //                 'errors'  => $validator->errors()
+    //             ], 422);
+    //         }
+
+    //         $input = $request->all();
+
+    //         // Uploads
+    //         $frontPath = $request->file('frontimg')->store('kyc_docs', 'public');
+    //         $backPath = $request->hasFile('backimg')
+    //             ? $request->file('backimg')->store('kyc_docs', 'public')
+    //             : null;
+
+    //         $addressProofPath = $request->file('address_proof_file')->store('address_proofs', 'public');
+
+    //         // Update or Create KYC
+    //         $kyc = Kyc::updateOrCreate(
+    //             ['customer_id' => $input['customer_id']],
+    //             [
+    //                 // Identity
+    //                 'first_name'      => $input['first_name'],
+    //                 'last_name'       => $input['last_name'],
+    //                 'dob'             => $input['dob'],
+    //                 'identity_type'   => $input['identity_type'],
+    //                 'identity_number' => $input['identity_number'],
+    //                 'frontimg'        => $frontPath,
+    //                 'backimg'         => $backPath,
+    //                 'identity_status' => 'true',
+
+    //                 // Address
+    //                 'country'             => $input['country'],
+    //                 'city'                => $input['city'],
+    //                 'address'             => $input['address'],
+    //                 'state'               => $input['state'],
+    //                 'zip_code'            => $input['zip_code'],
+    //                 'resi_address_status' => 'true',
+
+    //                 // Address Proof
+    //                 'address_proof_type'  => $input['address_proof_type'],
+    //                 'address_proof_file'  => $addressProofPath,
+    //                 'address_veri_status' => 'true',
+
+    //                 // Mobile
+    //                 'phone_number'       => $input['phone_number'],
+    //                 'mobile_verified_at' => now(),
+    //                 'mobile_status'      => 'true',
+
+    //                 // Final
+    //                 'final_status' => 'true',
+    //                 'status'       => 'Pending',
+    //                 'source'       => 'WEB',
+    //                 'updated_by'   => auth()->id() ?? 0,
+    //                 'created_by'   => auth()->id() ?? 0,
+    //             ]
+    //         );
+
+    //         // Link to Customer
+    //         $customer = Customer::findOrFail($input['customer_id']);
+    //         $customer->kyc_id = $kyc->id;
+    //         $customer->mobile_no = $input['phone_number']; // update customer mobile also
+    //         $customer->save();
+
+    //         return response()->json([
+    //             'status'  => 'success',
+    //             'message' => 'KYC submitted successfully (Admin Form).',
+    //             'data'    => $kyc
+    //         ], 201);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status'  => 'error',
+    //             'message' => 'Something went wrong',
+    //             'error'   => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
 
     public function show($id): View
     {
@@ -320,6 +487,7 @@ class KycController extends Controller
         ]);
     }
 
+    public function processedKyc(Request $request) {}
 
     public function destroy($id): JsonResponse
     {
