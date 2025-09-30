@@ -80,10 +80,13 @@ Route::middleware('api.key')->group(function () {
                 Route::post('kyc-update-status', [FranchiseDataController::class, 'updateKycStatus']);
 
                 // Customer Management APIs
+                Route::post('get-all-customers', [FranchiseDataController::class, 'getAllCustomers']);
                 Route::post('customers-list', [FranchiseDataController::class, 'getCustomers']);
 
                 // Order Management APIs
                 Route::post('orders-all', [FranchiseDataController::class, 'listAllOrders']);
+                Route::post('order-create', [FranchiseDataController::class, 'createOrder']);
+                Route::post('order-update', [FranchiseDataController::class, 'updateOrder']);
                 Route::post('order-details', [FranchiseDataController::class, 'orderDetails']);
 
                 Route::get('profile', function () {

@@ -9,6 +9,7 @@ use App\Models\Franchise;
 use App\Models\Kyc;
 use App\Models\Order;
 use App\Models\Setting;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -124,6 +125,50 @@ class FranchiseDataController extends Controller
         }
     }
 
+    public function getAllCustomers(Request $request)
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
+                ], 404);
+            }
+
+            $customers = Customer::where('ref_by', $franchise->code)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $customers->transform(function ($customer) {
+                return [
+                    'id'              => $customer->id,
+                    'name'            => trim(($customer->fname ?? '') . ' ' . ($customer->lname ?? '')),
+                    'email'           => $customer->email,
+                ];
+            });
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'All customers retrieved successfully',
+                'data'    => $customers,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function listAllOrders(Request $request)
     {
         try {
@@ -176,6 +221,143 @@ class FranchiseDataController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function createOrder(Request $request)
+    {
+        try {
+            $franchise = JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or missing token'
+            ], 401);
+        }
+
+        if (!$franchise) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Franchise not found'
+            ], 404);
+        }
+
+        // Validation
+        $validate = Validator::make($request->all(), [
+            'customer_id'             => 'required|exists:customers,id',
+            'purity'                  => 'nullable|string|max:100',
+            'before_melting_weight'   => 'required|numeric|min:0',
+            'after_melting_weight'    => 'nullable|numeric|min:0',
+            'unite_price'             => 'required|numeric|min:0',
+            'total_price'             => 'required|numeric|min:0',
+            'amount_paid'             => 'nullable|numeric|min:0',
+            'status'                  => 'required|in:Created,Gold_Recived,Payment_Done,Order_Cancelled,In_Process',
+            'order_note'              => 'nullable|string',
+
+            'before_image'   => 'nullable|array',
+            'before_image.*' => 'image|mimes:jpeg,png,jpg|max:3072',
+
+            'after_image'   => 'nullable|array',
+            'after_image.*' => 'image|mimes:jpeg,png,jpg|max:3072',
+        ]);
+
+        if ($validate->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validate->errors()->first(),
+            ], 400);
+        }
+
+        $input = $request->all();
+
+        $lastOrder = Order::latest('id')->first();
+        $nextSequence = $lastOrder ? $lastOrder->id + 1 : 1;
+        $yearPart = now()->format('Y');
+        $seqNumber = str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
+
+        $input['order_no'] = 'ORDER' . $yearPart . 'NO' . $seqNumber;
+        $input['invoice']  = 'INV' . $yearPart . 'NO' . $seqNumber;
+
+        // Before images
+        $beforeImages = [];
+        if ($request->hasFile('before_image')) {
+            foreach ($request->file('before_image') as $file) {
+                $beforeImages[] = $file->store('orders/before', 'public');
+            }
+        }
+        $input['before_image'] = json_encode($beforeImages);
+
+        // After images
+        $afterImages = [];
+        if ($request->hasFile('after_image')) {
+            foreach ($request->file('after_image') as $file) {
+                $afterImages[] = $file->store('orders/after', 'public');
+            }
+        }
+        $input['after_image'] = json_encode($afterImages);
+
+        // Save order
+        $order = Order::create([
+            'order_no'              => $input['order_no'],
+            'customer_id'           => $input['customer_id'],
+            'franchise_id'          => $franchise->id, // auto from token
+            'purity'                => $input['purity'] ?? null,
+            'before_melting_weight' => $input['before_melting_weight'],
+            'after_melting_weight'  => $input['after_melting_weight'] ?? 0,
+            'unite_price'           => $input['unite_price'],
+            'total_price'           => $input['total_price'],
+            'amount_paid'           => $input['amount_paid'] ?? 0,
+            'invoice'               => $input['invoice'],
+            'status'                => $input['status'],
+            'order_note'            => $input['order_note'] ?? null,
+            'before_image'          => $input['before_image'],
+            'after_image'           => $input['after_image'] ?? null,
+        ]);
+
+        // Send emails
+        $mainSettings = Setting::first();
+        $user = Customer::find($order->customer_id);
+
+        // To Admin
+        if ($mainSettings && $mainSettings->mail_from_email) {
+            Mail::send('emails.order_notification', [
+                'order'    => $order,
+                'settings' => $mainSettings,
+                'for'      => 'admin'
+            ], function ($message) use ($mainSettings) {
+                $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                    ->subject('New Order Created');
+            });
+        }
+
+        // To Customer
+        if ($user && $user->email) {
+            Mail::send('emails.order_notification', [
+                'order' => $order,
+                'user'  => $user,
+                'for'   => 'user'
+            ], function ($message) use ($user) {
+                $message->to($user->email, $user->fname ?? '')
+                    ->subject('Your Order Has Been Submitted');
+            });
+        }
+
+        // To Franchise
+        if ($franchise && $franchise->email) {
+            Mail::send('emails.order_notification', [
+                'order'     => $order,
+                'franchise' => $franchise,
+                'for'       => 'franchise'
+            ], function ($message) use ($franchise) {
+                $message->to($franchise->email, $franchise->name ?? '')
+                    ->subject('Order Created under Your Franchise');
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order created successfully!',
+            'data'    => $order
+        ]);
     }
 
     public function orderDetails(Request $request)
