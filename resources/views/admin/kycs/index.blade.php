@@ -19,10 +19,8 @@
          <div class="page-title fw-semibold fs-18 mb-0">
             <div>
                @can('KYC Add')
-               <a href="{{route('admin.kycs.create')}}" class="btn bg-warning-transparent text-warning btn-sm" data-bs-toggle="tooltip" title="" data-bs-placement="bottom" data-bs-original-title="Add New">
-                  <span>
-                     <i class="fa fa-plus"></i>
-                  </span>
+               <a href="{{route('admin.kycs.create')}}" class="btn bg-warning-transparent text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Add New">
+                  <span><i class="fa fa-plus"></i></span>
                </a>
                @endcan
             </div>
@@ -36,14 +34,17 @@
                      <table id="responsiveDataTable" class="table table-bordered text-nowrap w-100">
                         <thead>
                            <tr>
-                              <th><span>KYC ID</span></th>
-                              <th><span>Customer Name</span></th>
-                              <th><span>Document Type</span></th>
-                              <th><span>Email</span></th>
-                              <th><span>Phone Number</span></th>
-                              <th><span>Identity Type</span></th>
-                              <th><span>Identity Number</span></th>
-                              <th><span>Status</span></th>
+                              <th>KYC ID</th>
+                              <th>Customer Name</th>
+                              <th>Email</th>
+                              <th>Phone Number</th>
+                              <th>Identity Type</th>
+                              <th>Identity Number</th>
+                              <th>Mobile Status</th>
+                              <th>Residential Address</th>
+                              <th>Address Proof</th>
+                              <th>Final Status</th>
+                              <th>Overall Status</th>
                               <th>Action</th>
                            </tr>
                         </thead>
@@ -67,27 +68,6 @@
       }
    });
 
-   // Configure Toastr options globally
-   toastr.options = {
-      "closeButton": true,
-      "progressBar": true,
-      "positionClass": "toast-top-right",
-      "showDuration": "300",
-      "hideDuration": "1000",
-      "timeOut": "5000",
-      "extendedTimeOut": "1000",
-      "showEasing": "swing",
-      "hideEasing": "linear",
-      "showMethod": "fadeIn",
-      "hideMethod": "fadeOut",
-      "onShown": function() {
-         console.log('Toastr message shown.');
-      },
-      "onHidden": function() {
-         console.log('Toastr message hidden.');
-      }
-   };
-
    $(document).ready(function() {
       var table = $('#responsiveDataTable').DataTable({
          processing: true,
@@ -105,10 +85,6 @@
                searchable: false
             },
             {
-               data: 'document_type',
-               name: 'document_type'
-            },
-            {
                data: 'email',
                name: 'email'
             },
@@ -116,8 +92,6 @@
                data: 'phone_number',
                name: 'phone_number'
             },
-
-            // Corrected Fields
             {
                data: 'identity_type',
                name: 'identity_type'
@@ -126,34 +100,36 @@
                data: 'identity_number',
                name: 'identity_number'
             },
-
+            {
+               data: 'mobile_status',
+               name: 'mobile_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'resi_address_status',
+               name: 'resi_address_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'address_veri_status',
+               name: 'address_veri_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'final_status',
+               name: 'final_status',
+               orderable: false,
+               searchable: false
+            },
             {
                data: 'status',
                name: 'status',
-               render: function(data, type, row) {
-                  let statusText = data;
-                  let statusClass;
-
-                  switch (data) {
-                     case 'pending':
-                        statusClass = 'bg-warning';
-                        break;
-                     case 'approved':
-                        statusClass = 'bg-success';
-                        break;
-                     case 'rejected':
-                        statusClass = 'bg-danger';
-                        break;
-                     default:
-                        statusClass = 'bg-secondary';
-                        break;
-                  }
-                  return '<span class="badge ' + statusClass + '">' +
-                     statusText.charAt(0).toUpperCase() + statusText.slice(1) +
-                     '</span>';
-               }
+               orderable: false,
+               searchable: false
             },
-
             {
                data: 'action',
                name: 'action',
@@ -163,12 +139,9 @@
          ]
       });
 
-
-
       // Handle delete action via AJAX
       $('#responsiveDataTable').on('submit', '.delete-kyc-form', function(e) {
          e.preventDefault();
-
          let form = $(this);
          let url = form.attr('action');
 
@@ -178,18 +151,15 @@
                type: 'POST',
                data: form.serialize(),
                success: function(response) {
-                  console.log('AJAX success callback hit.', response);
                   toastr.success(response.message || 'KYC entry deleted successfully!');
-                  window.location.reload(); // Reload the page after successful deletion
+                  table.ajax.reload(null, false);
                },
                error: function(xhr) {
                   toastr.error(xhr.responseJSON.message || 'An error occurred. Please try again.');
-                  console.error('AJAX Error:', xhr.responseText);
                }
             });
          }
       });
-
    });
 </script>
 

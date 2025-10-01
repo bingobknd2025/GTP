@@ -548,6 +548,9 @@ class FranchiseDataController extends Controller
 
             $order = Order::find($orderId);
 
+            $beforeimg = json_decode($order->before_image);
+            $afterimg = json_decode($order->after_image);
+
             if (!$order) {
                 return response()->json([
                     'success' => false,
@@ -565,6 +568,8 @@ class FranchiseDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Order details retrieved successfully',
+                'beforeimg' => $beforeimg,
+                'afterimg' => $afterimg,
                 'data'    => $order
             ]);
         } catch (\Exception $e) {
