@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Kyc;
 use App\Models\Customer;
+use App\Models\Franchise;
 use App\Models\Setting;
+use Carbon\Carbon;
 use DataTables;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
@@ -22,54 +24,6 @@ class KycController extends Controller
         // Permissions will be added here later
     }
 
-    // public function index(Request $request)
-    // {
-    //     if ($request->ajax()) {
-    //         $data = Kyc::with('customer')->orderBy('id', 'DESC')->get();
-
-    //         return DataTables::of($data)
-    //             ->addIndexColumn()
-
-    //             // Customer full name
-    //             ->addColumn('customer_name', function ($row) {
-    //                 return $row->customer ? $row->customer->fname . ' ' . $row->customer->lname : 'N/A';
-    //             })
-
-    //             // Mobile Status
-    //             ->addColumn('mobile_status', function ($row) {
-    //                 $statusText = $row->mobile_status === 'true' ? 'Verified' : 'Not Verified';
-    //                 $statusClass = $row->mobile_status === 'true' ? 'bg-success' : 'bg-danger';
-    //                 return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
-    //             })
-
-    //             // Final Status
-    //             ->addColumn('final_status', function ($row) {
-    //                 $statusText = $row->final_status === 'true' ? 'Completed' : 'Pending';
-    //                 $statusClass = $row->final_status === 'true' ? 'bg-success' : 'bg-warning';
-    //                 return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
-    //             })
-
-    //             // Action buttons
-    //             ->addColumn('action', function ($row) {
-    //                 $editUrl   = route('admin.kycs.edit', $row->id);
-    //                 $deleteUrl = route('admin.kycs.destroy', $row->id);
-    //                 $showUrl   = route('admin.kycs.show', $row->id);
-
-    //                 $btn  = '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye"></i></a>';
-    //                 $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-primary me-1" title="Edit"><i class="fas fa-edit"></i></a>';
-    //                 $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline delete-kyc-form">'
-    //                     . csrf_field() . method_field('DELETE')
-    //                     . '<button type="submit" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash-alt"></i></button></form>';
-
-    //                 return $btn;
-    //             })
-    //             ->rawColumns(['mobile_status', 'final_status', 'action'])
-    //             ->make(true);
-    //     }
-
-    //     return view('admin.kycs.index');
-    // }
-
     public function index(Request $request)
     {
         if ($request->ajax()) {
@@ -83,42 +37,58 @@ class KycController extends Controller
                     return $row->customer ? $row->customer->fname . ' ' . $row->customer->lname : 'N/A';
                 })
 
+                // Customer Email
+                ->addColumn('email', function ($row) {
+                    return $row->customer ? $row->customer->email : 'N/A';
+                })
+
+                // Customer Phone
+                ->addColumn('phone_number', function ($row) {
+                    return $row->customer ? $row->customer->mobile_no : 'N/A';
+                })
+
+                // Identity Type
+                ->addColumn('identity_type', function ($row) {
+                    return $row->identity_type ?? 'N/A';
+                })
+
+                // Identity Number
+                ->addColumn('identity_number', function ($row) {
+                    return $row->identity_number ?? 'N/A';
+                })
+
+                // Identity Status
+                ->addColumn('identity_status', function ($row) {
+                    $statusText  = $row->identity_status === 'true' ? 'Verified' : 'Not Verified';
+                    $statusClass = $row->identity_status === 'true' ? 'bg-success' : 'bg-danger';
+                    return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
+                })
+
                 // Mobile Status
                 ->addColumn('mobile_status', function ($row) {
-                    $statusText = $row->mobile_status === 'true' ? 'Verified' : 'Not Verified';
+                    $statusText  = $row->mobile_status === 'true' ? 'Verified' : 'Not Verified';
                     $statusClass = $row->mobile_status === 'true' ? 'bg-success' : 'bg-danger';
                     return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
                 })
 
                 // Address Proof Status
                 ->addColumn('address_veri_status', function ($row) {
-                    $statusText = $row->address_veri_status === 'true' ? 'Submitted' : 'Pending';
+                    $statusText  = $row->address_veri_status === 'true' ? 'Submitted' : 'Pending';
                     $statusClass = $row->address_veri_status === 'true' ? 'bg-success' : 'bg-warning';
                     return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
                 })
 
                 // Residential Address Status
                 ->addColumn('resi_address_status', function ($row) {
-                    $statusText = $row->resi_address_status === 'true' ? 'Submitted' : 'Pending';
+                    $statusText  = $row->resi_address_status === 'true' ? 'Submitted' : 'Pending';
                     $statusClass = $row->resi_address_status === 'true' ? 'bg-success' : 'bg-warning';
                     return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
                 })
 
                 // Final Status
                 ->addColumn('final_status', function ($row) {
-                    $statusText = $row->final_status === 'true' ? 'Completed' : 'Pending';
+                    $statusText  = $row->final_status === 'true' ? 'Completed' : 'Pending';
                     $statusClass = $row->final_status === 'true' ? 'bg-success' : 'bg-warning';
-                    return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
-                })
-
-                // Overall Status (Pending / Approved / Rejected)
-                ->addColumn('status', function ($row) {
-                    $statusText = ucfirst($row->status ?? 'pending');
-                    $statusClass = match ($row->status) {
-                        'approved' => 'bg-success',
-                        'rejected' => 'bg-danger',
-                        default => 'bg-warning',
-                    };
                     return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
                 })
 
@@ -136,14 +106,20 @@ class KycController extends Controller
 
                     return $btn;
                 })
-                ->rawColumns(['mobile_status', 'address_veri_status', 'resi_address_status', 'final_status', 'status', 'action'])
+
+                ->rawColumns([
+                    'identity_status',
+                    'mobile_status',
+                    'address_veri_status',
+                    'resi_address_status',
+                    'final_status',
+                    'action'
+                ])
                 ->make(true);
         }
 
         return view('admin.kycs.index');
     }
-
-
 
     public function create(): View
     {
@@ -268,31 +244,34 @@ class KycController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                // Identity
-                'first_name'      => 'required|string|max:255',
-                'last_name'       => 'required|string|max:255',
-                'dob'             => 'required|date',
+
+                'customer_id'    => 'required|exists:customers,id',
+                'first_name'     => 'required|string|max:255',
+                'last_name'      => 'required|string|max:255',
+                'email'          => 'required|email|max:255',
+                'country_code'   => 'required|string|max:10',
+                'phone_number' => 'required|string|max:15|exists:customers,mobile_no',
+                'dob'            => 'required|date',
+                'social_media'   => 'required|url|max:255',
+                'address'        => 'required|string',
+                'city'           => 'required|string|max:255',
+                'state'          => 'required|string|max:255',
+                'country'        => 'required|string|max:255',
+                'address_proof_type' => 'required|in:Utility Bill,Rent Agreement,Bank Statement,Passport,Driving License,Voter ID',
+                'address_proof_file' => 'required|file|mimes:jpeg,png,jpg,pdf|max:2048',
+                'document_type'  => 'required|string|max:255',
+                'frontimg'       => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'backimg'        => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'status'         => 'required|in:pending,approved,rejected',
                 'identity_type'   => 'required|in:Aadhar,PAN,Passport,VoterID,DrivingLicense',
                 'identity_number' => 'required|string|max:50',
-                'frontimg'        => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-                'backimg'         => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-
-                // Residential Address
-                'country'   => 'required|string|max:255',
-                'city'      => 'required|string|max:255',
-                'address'   => 'required|string|max:500',
-                'state'     => 'required|string|max:255',
-                'zip_code'  => 'required|string|max:20',
-
-                // Address Proof
-                'address_proof_type' => 'required|in:Utility Bill,Rent Agreement,Bank Statement,Voter ID',
-                'address_proof_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
-
-                // Mobile
-                'phone_number' => 'required|string|max:15|unique:customers,mobile_no',
-
-                // Required
-                'customer_id' => 'required|exists:customers,id',
+                'identity_file'  => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
+                'identity_status' => 'nullable|in:true,false',
+                'kyc_type'       => 'required|in:online,offline',
+                'source'         => 'required|in:APP,WEB',
+                'zip_code'  => 'nullable|string|max:20',
+                'franchise_status' => 'required|in:true,false',
+                'admin_status'    => 'required|in:true,false',
             ]);
 
             if ($validator->fails()) {
@@ -305,60 +284,104 @@ class KycController extends Controller
 
             $input = $request->all();
 
-            // Uploads
+            // Upload files
             $frontPath = $request->file('frontimg')->store('kyc_docs', 'public');
-            $backPath = $request->hasFile('backimg')
-                ? $request->file('backimg')->store('kyc_docs', 'public')
-                : null;
+            $backPath = $request->hasFile('backimg') ? $request->file('backimg')->store('kyc_docs', 'public') : null;
+            $addressProofPath = $request->hasFile('address_proof_file') ? $request->file('address_proof_file')->store('address_proofs', 'public') : null;
+            $identityFilePath = $request->hasFile('identity_file') ? $request->file('identity_file')->store('identity_files', 'public') : null;
 
-            $addressProofPath = $request->file('address_proof_file')->store('address_proofs', 'public');
-
-            // Update or Create KYC
+            // Create or update KYC
             $kyc = Kyc::updateOrCreate(
                 ['customer_id' => $input['customer_id']],
                 [
-                    // Identity
-                    'first_name'      => $input['first_name'],
-                    'last_name'       => $input['last_name'],
-                    'dob'             => $input['dob'],
-                    'identity_type'   => $input['identity_type'],
-                    'identity_number' => $input['identity_number'],
-                    'frontimg'        => $frontPath,
-                    'backimg'         => $backPath,
-                    'identity_status' => 'true',
-
-                    // Address
+                    'first_name'          => $input['first_name'],
+                    'last_name'           => $input['last_name'],
+                    'email'               => $input['email'],
+                    'country_code'        => $input['country_code'],
+                    'social_media'       => $input['social_media'],
+                    'dob'                 => $input['dob'],
+                    'identity_type'       => $input['identity_type'],
+                    'identity_number'     => $input['identity_number'],
+                    'frontimg'            => $frontPath,
+                    'backimg'             => $backPath,
+                    'identity_file'       => $identityFilePath,
+                    'identity_status'     => 'true',
                     'country'             => $input['country'],
                     'city'                => $input['city'],
                     'address'             => $input['address'],
                     'state'               => $input['state'],
-                    'zip_code'            => $input['zip_code'],
+                    'zip_code'            => $input['zip_code'] ?? null,
                     'resi_address_status' => 'true',
+                    'address_status'      => 'approved',
 
-                    // Address Proof
-                    'address_proof_type'  => $input['address_proof_type'],
+                    'address_proof_type'  => $input['address_proof_type'] ?? null,
                     'address_proof_file'  => $addressProofPath,
                     'address_veri_status' => 'true',
 
-                    // Mobile
-                    'phone_number'       => $input['phone_number'],
-                    'mobile_verified_at' => now(),
-                    'mobile_status'      => 'true',
+                    'phone_number'        => $input['phone_number'],
+                    'mobile_verified_at'  => Carbon::now(),
+                    'mobile_status'       => 'true',
 
-                    // Final
-                    'final_status' => 'true',
-                    'status'       => 'Pending',
-                    'source'       => 'WEB',
-                    'updated_by'   => auth()->id() ?? 0,
-                    'created_by'   => auth()->id() ?? 0,
+                    'status'              => 'Approved',
+                    'final_status'        => $input['final_status'] ?? 'true',
+                    'kyc_type'            => $input['kyc_type'] ?? 'online',
+                    'source'              => $input['source'] ?? 'WEB',
+                    'franchise_status'    => $input['franchise_status'],
+                    'admin_status'        => $input['admin_status'],
+                    'updated_by'          => auth()->id() ?? 0,
+                    'created_by'          => auth()->id() ?? 0,
                 ]
             );
 
-            // Link to Customer
+            // Link KYC to Customer
             $customer = Customer::findOrFail($input['customer_id']);
+            $customer->country = $input['country'];
             $customer->kyc_id = $kyc->id;
-            $customer->mobile_no = $input['phone_number']; // update customer mobile also
+            $customer->mobile_no = $input['phone_number'];
+            $customer->mobile_verfied = 1;
+            $customer->account_verify = 1;
+            $customer->kyc_status = 'Verified';
+            $customer->status = 'Approved';
             $customer->save();
+
+            // Fetch main settings
+            $mainSettings = Setting::first();
+
+            // Mail to Admin
+            if ($mainSettings && $mainSettings->mail_from_email) {
+                Mail::raw(
+                    "New KYC Added and Approved.\n\nKYC ID: {$kyc->id}\nCustomer: {$customer->fname} {$customer->lname}\nEmail: {$kyc->email}",
+                    function ($message) use ($mainSettings) {
+                        $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                            ->subject('New KYC Approved');
+                    }
+                );
+            }
+
+            // Mail to Customer/User
+            if ($customer && $customer->email) {
+                Mail::raw(
+                    "Dear {$customer->fname},\n\nYour KYC has been submitted and approved successfully.\nKYC Status: {$kyc->status}\n\nThank you.",
+                    function ($message) use ($customer) {
+                        $message->to($customer->email, $customer->fname ?? '')
+                            ->subject('Your KYC Has Been Approved');
+                    }
+                );
+            }
+
+            // Mail to Franchise (if customer has a franchise assigned)
+            if ($customer->franchise_id) {
+                $franchise = Franchise::find($customer->franchise_id);
+                if ($franchise && $franchise->email) {
+                    Mail::raw(
+                        "A new customer has been created under you.\n\nCustomer: {$customer->fname} {$customer->lname}\nEmail: {$customer->email}\nKYC ID: {$kyc->id}",
+                        function ($message) use ($franchise) {
+                            $message->to($franchise->email, $franchise->name ?? '')
+                                ->subject('New Customer Created Under You');
+                        }
+                    );
+                }
+            }
 
             return response()->json([
                 'status'  => 'success',
@@ -373,6 +396,7 @@ class KycController extends Controller
             ], 500);
         }
     }
+
 
 
     public function show($id): View

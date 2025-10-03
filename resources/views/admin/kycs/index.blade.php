@@ -40,11 +40,11 @@
                               <th>Phone Number</th>
                               <th>Identity Type</th>
                               <th>Identity Number</th>
+                              <th>Identity Status</th>
                               <th>Mobile Status</th>
                               <th>Residential Address</th>
                               <th>Address Proof</th>
                               <th>Final Status</th>
-                              <th>Overall Status</th>
                               <th>Action</th>
                            </tr>
                         </thead>
@@ -101,6 +101,12 @@
                name: 'identity_number'
             },
             {
+               data: 'identity_status',
+               name: 'identity_status',
+               orderable: false,
+               searchable: false
+            },
+            {
                data: 'mobile_status',
                name: 'mobile_status',
                orderable: false,
@@ -125,18 +131,13 @@
                searchable: false
             },
             {
-               data: 'status',
-               name: 'status',
-               orderable: false,
-               searchable: false
-            },
-            {
                data: 'action',
                name: 'action',
                orderable: false,
                searchable: false
             }
          ]
+
       });
 
       // Handle delete action via AJAX

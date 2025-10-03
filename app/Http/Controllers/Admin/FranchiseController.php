@@ -72,7 +72,7 @@ class FranchiseController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $data = $request->validate([
             'name' => 'required',
             'address' => 'required',
             'pincode' => 'required',
@@ -83,29 +83,39 @@ class FranchiseController extends Controller
             'contact_person_number' => 'required',
             'store_lat' => 'required|numeric',
             'store_long' => 'required|numeric',
-            'status' => 'boolean',
+            'status' => 'required|in:Pending,Approved,Reject',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $input = $request->all();
+        // Hash password
+        $data['password'] = Hash::make($data['password']);
+        $data['created_by'] = auth()->id();
 
-        // Generate unique code
-        do {
-            $code = strtoupper(Str::random(10)); // Generate a random string of 10 characters and convert to uppercase
-        } while (Franchise::where('code', $code)->exists());
-        $input['code'] = $code;
+        // Always verified on creation
+        $data['is_verified'] = 'true';
 
-        $input['password'] = Hash::make($input['password']);
-        $input['created_by'] = auth()->id();
+        // Generate sequential franchise code
+        $lastFranchise = Franchise::orderBy('id', 'desc')->first();
+        if ($lastFranchise && $lastFranchise->code) {
+            $lastNumber = (int) filter_var($lastFranchise->code, FILTER_SANITIZE_NUMBER_INT);
+            $newNumber  = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+        $data['code'] = 'FRANCODE' . str_pad($newNumber, 3, '0', STR_PAD_LEFT);
 
+        // Referral link = only code
+        $data['ref_link'] = $data['code'];
+
+        // Image upload
         if ($image = $request->file('image')) {
             $destinationPath = 'images/franchises/';
             $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
             $image->move($destinationPath, $profileImage);
-            $input['image'] = "/$destinationPath" . $profileImage;
+            $data['image'] = "/$destinationPath" . $profileImage;
         }
 
-        Franchise::create($input);
+        Franchise::create($data);
 
         return redirect()->route('admin.franchises.index')
             ->with('success', 'Franchise created successfully.');
@@ -123,6 +133,48 @@ class FranchiseController extends Controller
         return view('admin.franchises.edit', compact('franchise'));
     }
 
+    // public function update(Request $request, $id): RedirectResponse
+    // {
+    //     $request->validate([
+    //         'name' => 'required',
+    //         'address' => 'required',
+    //         'pincode' => 'required',
+    //         'contact_no' => 'required',
+    //         'email' => 'required|email|unique:franchises,email,' . $id,
+    //         'contact_person_name' => 'required',
+    //         'contact_person_number' => 'required',
+    //         'store_lat' => 'required|numeric',
+    //         'store_long' => 'required|numeric',
+    //         'status' => 'boolean',
+    //         'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+    //     ]);
+
+    //     $franchise = Franchise::findOrFail($id);
+    //     $input = $request->all();
+
+    //     if ($request->filled('password')) {
+    //         $input['password'] = Hash::make($input['password']);
+    //     } else {
+    //         unset($input['password']);
+    //     }
+
+    //     $input['updated_by'] = auth()->id();
+
+    //     if ($image = $request->file('image')) {
+    //         $destinationPath = 'images/franchises/';
+    //         $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
+    //         $image->move($destinationPath, $profileImage);
+    //         $input['image'] = "/$destinationPath" . $profileImage;
+    //     } else {
+    //         unset($input['image']);
+    //     }
+
+    //     $franchise->update($input);
+
+    //     return redirect()->route('admin.franchises.index')
+    //         ->with('success', 'Franchise updated successfully.');
+    // }
+
     public function update(Request $request, $id): RedirectResponse
     {
         $request->validate([
@@ -135,13 +187,14 @@ class FranchiseController extends Controller
             'contact_person_number' => 'required',
             'store_lat' => 'required|numeric',
             'store_long' => 'required|numeric',
-            'status' => 'boolean',
+            'status' => 'required|in:Pending,Approved,Reject',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         $franchise = Franchise::findOrFail($id);
         $input = $request->all();
 
+        // Handle password update
         if ($request->filled('password')) {
             $input['password'] = Hash::make($input['password']);
         } else {
@@ -150,6 +203,10 @@ class FranchiseController extends Controller
 
         $input['updated_by'] = auth()->id();
 
+        // Update is_verified based on status
+        $input['is_verified'] = ($input['status'] === 'Approved') ? 'true' : 'false';
+
+        // Image upload
         if ($image = $request->file('image')) {
             $destinationPath = 'images/franchises/';
             $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
@@ -159,11 +216,16 @@ class FranchiseController extends Controller
             unset($input['image']);
         }
 
+        // Keep ref_link unchanged
+        unset($input['ref_link']);
+        unset($input['code']); // Do not update the code
+
         $franchise->update($input);
 
         return redirect()->route('admin.franchises.index')
             ->with('success', 'Franchise updated successfully.');
     }
+
 
     public function destroy($id): RedirectResponse
     {
@@ -176,11 +238,15 @@ class FranchiseController extends Controller
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'requiredd|boolean',
+            'status' => 'required|in:Pending,Approved,Reject',
         ]);
 
         $franchise = Franchise::findOrFail($id);
         $franchise->status = $request->input('status');
+
+        // Update is_verified based on status using ENUM strings
+        $franchise->is_verified = ($franchise->status === 'Approved') ? 'true' : 'false';
+
         $franchise->save();
 
         return response()->json(['message' => 'Franchise status updated successfully.']);

@@ -33,7 +33,7 @@ class Franchise extends Authenticatable implements JWTSubject
     ];
 
     protected $casts = [
-        'status' => 'boolean',
+        'status' => 'string',
     ];
 
     // ✅ JWT Required Methods
