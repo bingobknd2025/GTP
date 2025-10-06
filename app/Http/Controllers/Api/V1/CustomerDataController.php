@@ -51,6 +51,7 @@ class CustomerDataController extends Controller
                 'status'  => 'success',
                 'message' => 'Dashboard data retrieved successfully',
                 'data'    => [
+                    'website_currency' => Setting::first()->website_currency,
                     'total_orders' => $totalOrders,
                     'account_balance' => $customer->account_balance,
                     'amount_paid' => $Orders->sum('amount_paid'),
@@ -300,6 +301,7 @@ class CustomerDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Customer orders retrieved successfully',
+                'website_currency' => Setting::first()->website_currency,
                 'data'    => $orders
             ]);
         } catch (\Exception $e) {
@@ -363,6 +365,7 @@ class CustomerDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Order details retrieved successfully',
+                'website_currency' => Setting::first()->website_currency,
                 'data'    => $order
             ]);
         } catch (\Exception $e) {

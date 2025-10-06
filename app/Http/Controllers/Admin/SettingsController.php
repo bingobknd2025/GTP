@@ -30,6 +30,7 @@ class SettingsController extends Controller
             'website_name',
             'website_email',
             'website_contact',
+            'website_currency',
         ]);
 
         // Enum checkboxes

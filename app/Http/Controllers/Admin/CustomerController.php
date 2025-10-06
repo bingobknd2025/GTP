@@ -87,36 +87,9 @@ class CustomerController extends Controller
 
     public function create(): View
     {
-        $franchises = Franchise::all();
+        $franchises = Franchise::where('status', 'Active')->get();
         return view('admin.customers.create', compact('franchises'));
     }
-
-    // public function store(Request $request): JsonResponse
-    // {
-    //     $request->validate([
-    //         'franchise_id' => 'nullable|exists:franchises,id',
-    //         'fname' => 'nullable',
-    //         'lname' => 'nullable',
-    //         'email' => 'nullable|email|unique:customers,email',
-    //         'mobile_no' => 'nullable|unique:customers,mobile_no',
-    //         'password' => 'nullable|min:6',
-    //         'account_balance' => 'nullable|numeric',
-    //         'account_name' => 'nullable',
-    //         'account_type' => 'nullable',
-    //         'account_number' => 'nullable',
-    //         'account_bank' => 'nullable',
-    //         'status' => 'boolean',
-    //         'email_verfied' => 'boolean',
-    //         'mobile_verfied' => 'boolean',
-    //     ]);
-
-    //     $input = $request->all();
-    //     $input['password'] = Hash::make($input['password']);
-
-    //     Customer::create($input);
-
-    //     return response()->json(['success' => true, 'message' => 'Customer created successfully!']);
-    // }
 
     public function store(Request $request): JsonResponse
     {

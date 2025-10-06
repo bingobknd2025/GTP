@@ -46,14 +46,79 @@ class FranchiseDataController extends Controller
             $totalRevenue = Order::where('franchise_id', $franchiseId)->sum('amount_paid');
             $ref_link = 'http://localhost:5173/customer/register?ref=' . $franchise->code;
 
+            $setting = Setting::first();
+
+            // Total Verified user under this Franchise
+            $verifiedCustomers = Customer::where('ref_by', $franchise->code)
+                ->where('account_verify', 'approved')
+                ->orwhere('kyc_status', 'Verified')
+                ->count();
+
+            // Total Pending user under this Franchise
+            $pendingCustomers = Customer::where('ref_by', $franchise->code)
+                ->where(function ($query) {
+                    $query->where('account_verify', 'pending')
+                        ->orWhereNull('account_verify')
+                        ->orWhere('kyc_status', 'Pending');
+                })
+                ->count();
+
+            // Total Rejected user under this Franchise
+            $rejectedCustomers = Customer::where('ref_by', $franchise->code)
+                ->where(function ($query) {
+                    $query->where('account_verify', 'rejected')
+                        ->orWhere('kyc_status', 'Rejected');
+                })->count();
+
+            // Total Orders and no of Todays orders
+            $totalOrders = Order::whereHas('customer', function ($query) use ($franchise) {
+                $query->where('ref_by', $franchise->code);
+            })->count();
+
+            $todayOrders = Order::whereHas('customer', function ($query) use ($franchise) {
+                $query->where('ref_by', $franchise->code);
+            })
+                ->whereDate('created_at', now()) // only orders created today
+                ->count();
+
+            $franchiseCode = $franchise->code;
+
+            $approvedKYC = Kyc::whereHas('customer', function ($query) use ($franchiseCode) {
+                $query->where('ref_by', $franchiseCode);
+            })
+                ->where('status', 'Approved')
+                ->count();
+
+            $pendingKYC = Kyc::whereHas('customer', function ($query) use ($franchiseCode) {
+                $query->where('ref_by', $franchiseCode);
+            })
+                ->where('status', 'Pending')
+                ->count();
+
+            $rejectedKYC = Kyc::whereHas('customer', function ($query) use ($franchiseCode) {
+                $query->where('ref_by', $franchiseCode);
+            })
+                ->where('status', 'Rejected')
+                ->count();
+
+
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Dashboard data retrieved successfully',
                 'data'    => [
+                    'website_currency' => $setting->website_currency,
                     'ref_link'        => $ref_link,
                     'total_customers' => $totalCustomers,
                     'total_orders'    => $totalOrders,
                     'total_revenue'   => $totalRevenue,
+                    'verified_customers' => $verifiedCustomers,
+                    'pending_customers'  => $pendingCustomers,
+                    'rejected_customers' => $rejectedCustomers,
+                    'total_orders'    => $totalOrders,
+                    'today_orders'   => $todayOrders,
+                    'approved_kyc'    => $approvedKYC,
+                    'pending_kyc'     => $pendingKYC,
+                    'rejected_kyc'    => $rejectedKYC,
                     'franchise'  => $franchise,
                     'orders'     => $Orders,
                 ]
@@ -189,6 +254,7 @@ class FranchiseDataController extends Controller
             }
 
             $franchiseId = $franchise->id;
+            $settings = Setting::first();
 
             $orders = Order::where('franchise_id', $franchiseId)
                 ->orderBy('created_at', 'desc')
@@ -206,6 +272,7 @@ class FranchiseDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Franchise orders retrieved successfully',
+                'website_currency' => $settings->website_currency,
                 'data'    => $orders->items(),
                 'meta'    => [
                     'current_page' => $orders->currentPage(),
@@ -317,6 +384,8 @@ class FranchiseDataController extends Controller
         $mainSettings = Setting::first();
         $user = Customer::find($order->customer_id);
 
+        $order = $mainSettings->website_currency;
+
         // To Admin
         if ($mainSettings && $mainSettings->mail_from_email) {
             Mail::send('emails.order_notification', [
@@ -353,9 +422,11 @@ class FranchiseDataController extends Controller
             });
         }
 
+
         return response()->json([
             'success' => true,
             'message' => 'Order created successfully!',
+            'website_currency' => $mainSettings->website_currency,
             'data'    => $order
         ]);
     }
@@ -502,6 +573,7 @@ class FranchiseDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Order updated successfully',
+                'website_currency' => $mainSettings->website_currency,
                 'data'    => $order
             ]);
         } catch (\Exception $e) {
@@ -568,6 +640,7 @@ class FranchiseDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Order details retrieved successfully',
+                'website_currency' => Setting::first()->website_currency,
                 'beforeimg' => $beforeimg,
                 'afterimg' => $afterimg,
                 'data'    => $order

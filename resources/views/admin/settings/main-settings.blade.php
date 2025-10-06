@@ -58,6 +58,13 @@
                     value="{{ $mainSettings->website_contact }}">
                 </div>
 
+                {{-- Website Currency --}}
+                <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
+                  <label class="form-label">Website Currency</label>
+                  <input type="text" class="form-control" name="website_currency"
+                    value="{{ $mainSettings->website_currency }}">
+                </div>
+
                 {{-- Favicon --}}
                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                   <label class="form-label">Website Favicon</label>

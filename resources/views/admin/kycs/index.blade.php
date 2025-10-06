@@ -128,7 +128,25 @@
                data: 'final_status',
                name: 'final_status',
                orderable: false,
-               searchable: false
+               searchable: false,
+               render: function(data, type, row) {
+                  // handle ENUM('true', 'false') values as strings
+                  let isApproved = (data === 'true');
+                  let statusText = isApproved ? 'Approved' : 'Pending';
+                  let statusClass = isApproved ? 'btn-success' : 'btn-warning';
+
+                  return `
+                     <div class="dropdown">
+                        <button class="btn btn-sm ${statusClass} dropdown-toggle" type="button" id="dropdownFinalStatus${row.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                           ${statusText}
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownFinalStatus${row.id}">
+                           <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="true">Approved</a></li>
+                           <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="false">Pending</a></li>
+                        </ul>
+                     </div>
+                  `;
+               }
             },
             {
                data: 'action',
@@ -161,6 +179,35 @@
             });
          }
       });
+
+      $(document).on('click', '.final-status-toggle', function(e) {
+         e.preventDefault();
+
+         let id = $(this).data('id');
+         let status = $(this).data('status'); // true or false (string)
+
+         $.ajax({
+            url: "{{ route('admin.kycs.finalStatus') }}",
+            type: 'POST',
+            data: {
+               _token: $('meta[name="csrf-token"]').attr('content'),
+               id: id,
+               status: status
+            },
+            success: function(response) {
+               if (response.success) {
+                  toastr.success('Final status updated successfully!');
+                  $('#kycTable').DataTable().ajax.reload(null, false);
+               } else {
+                  toastr.error('Something went wrong.');
+               }
+            },
+            error: function() {
+               toastr.error('Server error. Please try again.');
+            }
+         });
+      });
+
    });
 </script>
 
