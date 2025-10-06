@@ -256,7 +256,9 @@ class FranchiseDataController extends Controller
             $franchiseId = $franchise->id;
             $settings = Setting::first();
 
-            $orders = Order::where('franchise_id', $franchiseId)
+            // Fetch orders with customer data
+            $orders = Order::with('customer') // eager load customer
+                ->where('franchise_id', $franchiseId)
                 ->orderBy('created_at', 'desc')
                 ->paginate(10, [
                     'id',
@@ -269,11 +271,29 @@ class FranchiseDataController extends Controller
                     'created_at'
                 ]);
 
+            // Map orders to include full customer name
+            $ordersData = $orders->map(function ($order) {
+                $customer = $order->customer;
+                $customerName = $customer ? trim($customer->fname . ' ' . $customer->lname) : 'N/A';
+
+                return [
+                    'id'            => $order->id,
+                    'customer_id'   => $order->customer_id,
+                    'customer_name' => $customerName,
+                    'order_no'      => $order->order_no,
+                    'invoice'       => $order->invoice,
+                    'status'        => $order->status,
+                    'total_price'   => $order->total_price,
+                    'amount_paid'   => $order->amount_paid,
+                    'created_at'    => $order->created_at,
+                ];
+            });
+
             return response()->json([
                 'success' => true,
                 'message' => 'Franchise orders retrieved successfully',
                 'website_currency' => $settings->website_currency,
-                'data'    => $orders->items(),
+                'data'    => $ordersData,
                 'meta'    => [
                     'current_page' => $orders->currentPage(),
                     'last_page'    => $orders->lastPage(),
@@ -289,6 +309,7 @@ class FranchiseDataController extends Controller
             ], 500);
         }
     }
+
 
     public function createOrder(Request $request)
     {
