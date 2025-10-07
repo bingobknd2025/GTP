@@ -6,13 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Hamcrest\Core\Set;
 use Illuminate\Http\Request;
+use App\Models\UserActivity;
+use Illuminate\Support\Facades\Auth;
+use App\Helpers\CustomeHelper;
 
 class SettingsController extends Controller
 {
     public function mainSettings()
     {
         $mainSettings = Setting::where('id', 1)->first();
-        // dd($mainSettings);
+        CustomeHelper::logAdminActivity(
+            Auth::id(),
+            'View Main Settings Page',
+            ['page' => 'Main Settings']
+        );
+
         return view('admin.settings.main-settings', compact('mainSettings'));
     }
 

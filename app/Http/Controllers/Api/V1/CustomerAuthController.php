@@ -40,18 +40,35 @@ class CustomerAuthController extends Controller
             'ref_by'    => 'nullable|string|max:100',
         ]);
 
+
+
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            // if($request->fname() == null){
+            //     return response()->json([
+            //         'status'  => 'error',
+            //         'message' => 'First name is required',
+            //     ], 422);
+            // }
+            // if($request->lname() == null){
+            //     return response()->json([
+            //         'status'  => 'error',
+            //         'message' => 'Last name is required',
+            //     ], 422);
+            // }
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation errors',
+                'errors'  => $validator->errors()
+            ], 422);
         }
 
         $data = $validator->validated();
         $data['password'] = Hash::make($data['password']);
 
-        // If ref_by is provided → check franchise
         if (!empty($data['ref_by'])) {
             $franchise = Franchise::where('code', $data['ref_by'])->first();
             if ($franchise) {
-                $data['franchise_id'] = $franchise->id; // Save franchise_id in customers table
+                $data['franchise_id'] = $franchise->id;
             }
         }
 
@@ -74,7 +91,7 @@ class CustomerAuthController extends Controller
                 'ref_by'      => $customer->ref_by,
                 'franchise_id' => $customer->franchise_id ?? null,
             ]
-        ], 201);
+        ], 200);
     }
 
     public function login(Request $request)

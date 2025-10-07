@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ActivityController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -152,6 +153,13 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/user/import-excel/view', [UserController::class, 'import_excel_view'])->name('admin.users.import_excel_view')->middleware(['permission:User Excel Import View']);
     Route::post('/user/import-excel', [UserController::class, 'import_excel'])->name('admin.users.import_excel')->middleware(['permission:User Excel Import']);
+
+    // Activity Routes
+    Route::prefix('admin/activity')->name('admin.activity.')->group(function () {
+        Route::get('/', [ActivityController::class, 'index'])->name('index')->middleware(['permission:Admin Activity']);
+        Route::get('show/{id}', [ActivityController::class, 'show'])->name('show')->middleware(['permission:Admin Activity']);
+        Route::delete('destroy/{id}', [ActivityController::class, 'destroy'])->name('destroy')->middleware(['permission:Admin Activity']);
+    });
 
     // Setting Routes
     Route::prefix('admin/settings')->name('admin.settings.')->group(function () {

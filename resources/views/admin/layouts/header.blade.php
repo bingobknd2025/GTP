@@ -732,6 +732,36 @@
                         </li>
                         @endcan
 
+                        @can('Activity')
+                        <li class="slide has-sub">
+                            <a href="javascript:void(0);" class="side-menu__item">
+                                <i class="ri-settings-3-line side-menu__icon"></i>
+                                <span class="side-menu__label">Activity Management</span>
+                                <i class="fe fe-chevron-right side-menu__angle"></i>
+                            </a>
+                            <ul class="slide-menu child1">
+                                <li class="slide side-menu__label1">
+                                    <a href="javascript:void(0)">Activity Management</a>
+                                </li>
+                                @can('Admin Activity')
+                                <li class="slide">
+                                    <a href="{{ route('admin.activity.index') }}" class="side-menu__item">Admin Activity</a>
+                                </li>
+                                @endcan
+                                @can('Customer Activity')
+                                <li class="slide">
+                                    <a href="{{ route('admin.activity.index') }}" class="side-menu__item"> Customer Activity</a>
+                                </li>
+                                @endcan
+                                @can('Franchise Activity')
+                                <li class="slide">
+                                    <a href="{{ route('admin.activity.index') }}" class="side-menu__item"> Franchise Activity</a>
+                                </li>
+                                @endcan
+                            </ul>
+                        </li>
+                        @endcan
+
                         @can('Settings')
                         <li class="slide has-sub">
                             <a href="javascript:void(0);" class="side-menu__item">
