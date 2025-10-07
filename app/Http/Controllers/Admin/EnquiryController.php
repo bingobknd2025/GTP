@@ -51,8 +51,8 @@ class EnquiryController extends Controller
                 })
                 // Action buttons
                 ->addColumn('action', function ($row) {
-                    $deleteUrl = route('admin.kycs.destroy', $row->id);
-                    $showUrl   = route('admin.kycs.show', $row->id);
+                    $deleteUrl = route('admin.enquiries.destroy', $row->id);
+                    $showUrl   = route('admin.enquiries.show', $row->id);
 
                     $btn  = '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye"></i></a>';
                     $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline delete-kyc-form">'
@@ -74,6 +74,12 @@ class EnquiryController extends Controller
         }
 
         return view('admin.settings.enquiry-settings');
+    }
+
+    public function show($id)
+    {
+        $data = Enquiry::findOrFail($id);
+        return view('admin.settings.show-enquiry-settings', compact('data'));
     }
 
 
