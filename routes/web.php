@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Http\Controllers\Front\FranchiseAuthController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DepositController;
+use App\Http\Controllers\Admin\EnquiryController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PermissionController;
@@ -165,6 +166,14 @@ Route::middleware('auth')->group(function () {
         Route::get('payment-gateway', [SettingsController::class, 'paymentGatewaySettings'])->name('payment_gateway');
         Route::post('payment-gateway', [SettingsController::class, 'paymentGatewaySettingsUpdate'])->name('payment_gateway.update');
     });
+
+    // Enquiry Settings Routes
+    Route::prefix('admin/enquiries')->name('admin.enquiries.')->group(function () {
+        Route::get('/', [EnquiryController::class, 'index'])->name('index');
+        Route::get('show/{id}', [EnquiryController::class, 'show'])->name('show');
+        Route::delete('destroy/{id}', [EnquiryController::class, 'destroy'])->name('destroy');
+    });
+
 
     Route::get('/admin/users/{id}/pincode', [UserController::class, 'pincode_index'])->name('users.pincode_index');
     Route::post('/users/pincode/store', [UserController::class, 'pincode_store'])->name('users.pincode_store');

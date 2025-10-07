@@ -753,6 +753,11 @@
                                     <a href="{{route('admin.settings.preference')}}" class="side-menu__item"> Preference Settings</a>
                                 </li>
                                 @endcan
+                                @can('Enquiry Settings')
+                                <li class="slide">
+                                    <a href="{{route('admin.enquiries.index')}}" class="side-menu__item"> Enquiry Settings</a>
+                                </li>
+                                @endcan
                             </ul>
                         </li>
                         @endcan

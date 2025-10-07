@@ -7,28 +7,112 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Franchise;
 use App\Models\Kyc;
+use Carbon\Carbon;
 
 class HomeController extends Controller
 {
   public function index()
   {
-    $customers = Customer::query();
-    $totalCustomers = $customers->count();
-    $activeCustomers = $customers->where('status', 'Approved')->count();
-    $inactiveCustomers = $customers->where('status', 'Pending')->count();
+    // Current and last month dates
+    $currentMonthStart = Carbon::now()->startOfMonth();
+    $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+    $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-    $orders = Order::query();
-    $totalOrders = $orders->count();
-    $pendingOrders = $orders->where('status', 'Pending')->count();
+    // Total customers (all time)
+    $totalCustomers = Customer::count();
 
-    $franchises = Franchise::query();
-    $totalFranchises = $franchises->count();
+    // Customers registered this month
+    $thisMonthCustomers = Customer::where('created_at', '>=', $currentMonthStart)->count();
 
-    $activeFranchises = $franchises->where('status', 'Approved')->count();
-    $inactiveFranchises = $franchises->where('status', 'Pending')->count();
+    // Customers registered last month
+    $lastMonthCustomers = Customer::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+
+    // Calculate % change (handle divide by zero)
+    if ($lastMonthCustomers > 0) {
+      $growthPercentage = (($thisMonthCustomers - $lastMonthCustomers) / $lastMonthCustomers) * 100;
+    } else {
+      $growthPercentage = $thisMonthCustomers > 0 ? 100 : 0;
+    }
+    $activeCustomers = Customer::where('status', 'Approved')->count();
+    $inactiveCustomers = Customer::where('status', 'Pending')->count();
+
+    // ---- ORDER DATA ----
+    $currentMonthStart = Carbon::now()->startOfMonth();
+    $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+    $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+
+    // Total Orders (All Time)
+    $totalOrders = Order::count();
+
+    // Orders this month
+    $thisMonthOrders = Order::where('created_at', '>=', $currentMonthStart)->count();
+
+    // Orders last month
+    $lastMonthOrders = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+
+    // % Growth Calculation
+    if ($lastMonthOrders > 0) {
+      $orderGrowth = (($thisMonthOrders - $lastMonthOrders) / $lastMonthOrders) * 100;
+    } else {
+      $orderGrowth = $thisMonthOrders > 0 ? 100 : 0;
+    }
+
+    // Order status counts
+    $pendingOrders = Order::where('status', 'Pending')->count();
+    $completedOrders = Order::where('status', 'Completed')->count();
+
+    // ---- FRANCHISE DATA ----
+    $currentMonthStart = Carbon::now()->startOfMonth();
+    $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+    $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+
+    // Total franchises (all time)
+    $totalFranchises = Franchise::count();
+
+    // Franchises registered this month
+    $thisMonthFranchises = Franchise::where('created_at', '>=', $currentMonthStart)->count();
+
+    // Franchises registered last month
+    $lastMonthFranchises = Franchise::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+
+    // % Growth calculation (safe divide)
+    if ($lastMonthFranchises > 0) {
+      $franchiseGrowth = (($thisMonthFranchises - $lastMonthFranchises) / $lastMonthFranchises) * 100;
+    } else {
+      $franchiseGrowth = $thisMonthFranchises > 0 ? 100 : 0;
+    }
+
+    // Status counts
+    $activeFranchises = Franchise::where('status', 'Approved')->count();
+    $inactiveFranchises = Franchise::where('status', 'Pending')->count();
 
     $totalkyc = KYC::query()->count();
     $pendingkyc = KYC::query()->where('status', 'Pending')->count();
+
+    // ---- KYC DATA ----
+    $currentMonthStart = Carbon::now()->startOfMonth();
+    $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
+    $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+
+    // Total KYC (all time)
+    $totalkyc = KYC::count();
+
+    // KYC this month
+    $thisMonthKYC = KYC::where('created_at', '>=', $currentMonthStart)->count();
+
+    // KYC last month
+    $lastMonthKYC = KYC::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
+
+    // % Growth Calculation
+    if ($lastMonthKYC > 0) {
+      $kycGrowth = (($thisMonthKYC - $lastMonthKYC) / $lastMonthKYC) * 100;
+    } else {
+      $kycGrowth = $thisMonthKYC > 0 ? 100 : 0;
+    }
+
+    // Status counts
+    $pendingkyc = KYC::where('status', 'Pending')->count();
+    $approvedKYC = KYC::where('status', 'Approved')->count();
     $totalRevenue = Order::sum('total_price');
 
 
@@ -36,13 +120,19 @@ class HomeController extends Controller
       'totalCustomers',
       'activeCustomers',
       'inactiveCustomers',
+      'growthPercentage',
       'totalOrders',
       'pendingOrders',
+      'completedOrders',
+      'orderGrowth',
       'totalFranchises',
       'activeFranchises',
       'inactiveFranchises',
+      'franchiseGrowth',
       'totalkyc',
       'pendingkyc',
+      'approvedKYC',
+      'kycGrowth',
       'totalRevenue'
     ));
   }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\OtpHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Enquiry;
 use App\Models\Franchise;
 use App\Models\Kyc;
 use App\Models\Order;
@@ -372,6 +373,32 @@ class CustomerDataController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function enquiryStore(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'name'    => 'required|string|max:255',
+                'email'   => 'required|email|max:255',
+                'phone'   => 'nullable|string|max:20',
+                'subject' => 'nullable|string|max:255',
+                'message' => 'required|string',
+            ]);
+
+            $enquiry = Enquiry::create($validatedData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Enquiry submitted successfully.',
+                'data'    => $enquiry,
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
     }

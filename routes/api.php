@@ -12,6 +12,7 @@ Route::middleware('api.key')->group(function () {
     Route::prefix('v1')->group(function () {
         Route::post('get-country', [CustomerAuthController::class, 'getCountry']);
         Route::post('get-franchises', [CustomerDataController::class, 'getFranchises']);
+        Route::post('enquiry-store', [CustomerDataController::class, 'enquiryStore']);
 
         Route::prefix('customer')->group(function () {
             Route::post('register', [CustomerAuthController::class, 'register']);

@@ -102,7 +102,7 @@
                     </ol>
                 </nav>
             </div>
-            <div class="page-title fw-semibold fs-18 mb-0">
+            <!-- <div class="page-title fw-semibold fs-18 mb-0">
                 <div>
                     <a href="javascript:void(0);" class="btn bg-secondary-transparent text-secondary btn-sm" data-bs-toggle="tooltip" title="" data-bs-placement="bottom" data-bs-original-title="Rating">
                         <span>
@@ -120,13 +120,12 @@
                         </span>
                     </a>
                 </div>
-            </div>
+            </div> -->
         </div>
-        <!-- Page Header Close -->
 
         <!-- Start::row-1 -->
         <div class="row">
-            <div class="col-xl-7 col-lg-12 col-md-12 col-sm-12">
+            <!-- <div class="col-xl-7 col-lg-12 col-md-12 col-sm-12">
                 <div class="card custom-card overflow-hidden">
                     <div class="card-header d-flex justify-content-between allign-items-center">
                         <h3 class="card-title">Revenue Analytics</h3>
@@ -159,95 +158,143 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-xl-5 col-lg-12 col-md-12 col-sm-12">
-                <div class="row row-sm">
-                    <div class="col-sm-6 col-lg-6">
-                        <div class="card overflow-hidden">
-                            <div class="card-body">
-                                <div class="d-flex">
-                                    <div class="me-2">
-                                        <div class="mb-0 fw-semibold text-dark">Daily Users</div>
-                                        <h3 class="mt-1 mb-1 text-dark fw-semibold">4,304</h3>
-                                        <div class="text-muted fs-12 mt-2"><i class="fe fe-arrow-up-right text-success me-1"></i>
-                                            <span class="fw-bold fs-12 text-primary">6.05%</span> Since last month
-                                        </div>
+            </div> -->
+            <div class="row row-sm">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card overflow-hidden">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <div class="me-2">
+                                    <div class="mb-0 fw-semibold text-dark">Registered Customers</div>
+                                    <h3 class="mt-1 mb-1 text-dark fw-semibold">{{ $totalCustomers }}</h3>
+                                    <div class="text-muted fs-12 mt-2">
+                                        @if ($growthPercentage >= 0)
+                                        <i class="fe fe-arrow-up-right text-success me-1"></i>
+                                        <span class="fw-bold fs-12 text-success">
+                                            {{ number_format($growthPercentage, 2) }}%
+                                        </span> Last month
+                                        @else
+                                        <i class="fe fe-arrow-down-right text-danger me-1"></i>
+                                        <span class="fw-bold fs-12 text-danger">
+                                            {{ number_format(abs($growthPercentage), 2) }}%
+                                        </span> Last month
+                                        @endif
                                     </div>
-                                    <i class="fe fe-user ms-auto my-auto bg-primary bg-opacity-25 avatar-lg avatar-bg text-primary"></i>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="card overflow-hidden">
-                            <div class="card-body">
-                                <div class="d-flex">
-                                    <div class="me-2">
-                                        <div class="mb-0 fw-semibold text-dark">Sessions</div>
-                                        <h3 class="mt-1 mb-1 text-dark fw-semibold">46.4K</h3>
-                                        <div class="text-muted fs-12 mt-2"><i class="fe fe-arrow-up-right text-success me-1"></i>
-                                            <span class="fw-bold fs-12 text-success">4.12%</span> Since last month
-                                        </div>
-                                    </div>
-                                    <i class="fe fe-database ms-auto my-auto bg-secondary bg-opacity-25 avatar-lg avatar-bg text-secondary"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-sm-6 col-lg-6">
-                        <div class="card overflow-hidden">
-                            <div class="card-body">
-                                <div class="d-flex">
-                                    <div class="me-2">
-                                        <div class="mb-0 fw-semibold text-dark">Bounce Rate</div>
-                                        <h3 class="mt-1 mb-1 text-dark fw-semibold">25.04%</h3>
-                                        <div class="text-muted fs-12 mt-2"><i class="fe fe-arrow-up-right text-warning me-1"></i>
-                                            <span class="fw-bold fs-12 text-warning">0.20%</span> Since last month
-                                        </div>
-                                    </div>
-                                    <i class="fe fe-clock ms-auto my-auto bg-warning bg-opacity-25 avatar-lg avatar-bg text-warning"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card overflow-hidden">
-                            <div class="card-body">
-                                <div class="d-flex">
-                                    <div class="me-2">
-                                        <div class="mb-0 fw-semibold text-dark">Subscribers</div>
-                                        <h3 class="mt-1 mb-1 text-dark fw-semibold">10K</h3>
-                                        <div class="text-muted fs-12 mt-2"><i class="fe fe-arrow-up-right text-danger me-1"></i>
-                                            <span class="fw-bold fs-12 text-danger">2.20%</span> Since last month
-                                        </div>
-                                    </div>
-                                    <i class="fe fe-bell ms-auto my-auto bg-danger bg-opacity-25 avatar-lg avatar-bg text-danger"></i>
-                                </div>
+                                <i class="fe fe-user ms-auto my-auto bg-primary bg-opacity-25 avatar-lg avatar-bg text-primary"></i>
+
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="row row-sm">
-                    <div class="col-12">
-                        <div class="card custom-card overflow-hidden">
-                            <div class="card-header pb-0 border-bottom-0">
-                                <h3 class="card-title fs-22 fw-semibold">Deliverables</h3>
-                            </div>
-                            <div class="card-body padding-top-spacing">
-                                <div class="d-block d-sm-inline-flex align-items-center my-3">
-                                    <p class="mb-0 me-5"> <span class="legend bg-info"></span>Marketing Strategy</p>
-                                    <p class="mb-0 me-5"> <span class="legend bg-teal"></span>Engaging Audience</p>
-                                    <p class="mb-0 me-5"> <span class="legend bg-pink"></span>Others</p>
-                                </div>
-                                <div class="progress-stacked br-10">
-                                    <div class="progress" role="progressbar" aria-label="Segment one" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100" style="width: 25%">
-                                        <div class="progress-bar bg-info">20%</div>
-                                    </div>
-                                    <div class="progress" role="progressbar" aria-label="Segment two" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="width: 30%">
-                                        <div class="progress-bar bg-teal">30%</div>
-                                    </div>
-                                    <div class="progress" role="progressbar" aria-label="Segment three" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 50%">
-                                        <div class="progress-bar bg-pink">50%</div>
-                                    </div>
-                                </div>
 
+                <div class="col-md-3 col-sm-6">
+                    <div class="card overflow-hidden">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <div class="me-2">
+                                    <div class="mb-0 fw-semibold text-dark">Registered Franchises</div>
+                                    <h3 class="mt-1 mb-1 text-dark fw-semibold">{{ $totalFranchises }}</h3>
+                                    <div class="text-muted fs-12 mt-2">
+                                        @if ($franchiseGrowth >= 0)
+                                        <i class="fe fe-arrow-up-right text-success me-1"></i>
+                                        <span class="fw-bold fs-12 text-success">
+                                            {{ number_format($franchiseGrowth, 2) }}%
+                                        </span> Last month
+                                        @else
+                                        <i class="fe fe-arrow-down-right text-danger me-1"></i>
+                                        <span class="fw-bold fs-12 text-danger">
+                                            {{ number_format(abs($franchiseGrowth), 2) }}%
+                                        </span> Last month
+                                        @endif
+                                    </div>
+                                </div>
+                                <i class="fe fe-shield ms-auto my-auto bg-secondary bg-opacity-25 avatar-lg avatar-bg text-secondary"></i>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-sm-6">
+                    <div class="card overflow-hidden">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <div class="me-2">
+                                    <div class="mb-0 fw-semibold text-dark">Total Orders</div>
+                                    <h3 class="mt-1 mb-1 text-dark fw-semibold">{{ $totalOrders }}</h3>
+                                    <div class="text-muted fs-12 mt-2">
+                                        @if ($orderGrowth >= 0)
+                                        <i class="fe fe-arrow-up-right text-success me-1"></i>
+                                        <span class="fw-bold fs-12 text-success">
+                                            {{ number_format($orderGrowth, 2) }}%
+                                        </span> Last month
+                                        @else
+                                        <i class="fe fe-arrow-down-right text-danger me-1"></i>
+                                        <span class="fw-bold fs-12 text-danger">
+                                            {{ number_format(abs($orderGrowth), 2) }}%
+                                        </span> Last month
+                                        @endif
+                                    </div>
+                                </div>
+                                <i class="fe fe-clock ms-auto my-auto bg-warning bg-opacity-25 avatar-lg avatar-bg text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-sm-6">
+                    <div class="card overflow-hidden">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <div class="me-2">
+                                    <div class="mb-0 fw-semibold text-dark">Total Kycs</div>
+                                    <h3 class="mt-1 mb-1 text-dark fw-semibold">{{ $totalkyc }}</h3>
+                                    <div class="text-muted fs-12 mt-2">
+                                        @if ($kycGrowth >= 0)
+                                        <i class="fe fe-arrow-up-right text-success me-1"></i>
+                                        <span class="fw-bold fs-12 text-success">
+                                            {{ number_format($kycGrowth, 2) }}%
+                                        </span> Last month
+                                        @else
+                                        <i class="fe fe-arrow-down-right text-danger me-1"></i>
+                                        <span class="fw-bold fs-12 text-danger">
+                                            {{ number_format(abs($kycGrowth), 2) }}%
+                                        </span> Last month
+                                        @endif
+                                    </div>
+                                </div>
+                                <i class="fe fe-file-text ms-auto my-auto bg-danger bg-opacity-25 avatar-lg avatar-bg text-danger"></i>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row row-sm">
+                <div class="col-12">
+                    <div class="card custom-card overflow-hidden">
+                        <div class="card-header pb-0 border-bottom-0">
+                            <h3 class="card-title fs-22 fw-semibold">Deliverables</h3>
+                        </div>
+                        <div class="card-body padding-top-spacing">
+                            <div class="d-block d-sm-inline-flex align-items-center my-3">
+                                <p class="mb-0 me-5"> <span class="legend bg-info"></span>Marketing Strategy</p>
+                                <p class="mb-0 me-5"> <span class="legend bg-teal"></span>Engaging Audience</p>
+                                <p class="mb-0 me-5"> <span class="legend bg-pink"></span>Others</p>
+                            </div>
+                            <div class="progress-stacked br-10">
+                                <div class="progress" role="progressbar" aria-label="Segment one" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100" style="width: 25%">
+                                    <div class="progress-bar bg-info">20%</div>
+                                </div>
+                                <div class="progress" role="progressbar" aria-label="Segment two" aria-valuenow="30" aria-valuemin="0" aria-valuemax="100" style="width: 30%">
+                                    <div class="progress-bar bg-teal">30%</div>
+                                </div>
+                                <div class="progress" role="progressbar" aria-label="Segment three" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="width: 50%">
+                                    <div class="progress-bar bg-pink">50%</div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
                 </div>
@@ -531,17 +578,6 @@
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <!-- <span class="select2 select2-container select2-container--default" dir="ltr" style="width: 60px;">
-                                                    <span class="selection">
-                                                        <span class="select2-selection select2-selection--single" role="combobox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-labelledby="select2-data-table3_length-l2-container">
-                                                            <span class="select2-selection__rendered" id="select2-data-table3_length-l2-container" title="10">10</span>
-                                                            <span class="select2-selection__arrow" role="presentation">
-                                                                <b role="presentation"></b>
-                                                            </span>
-                                                        </span>
-                                                    </span>
-                                                    <span class="dropdown-wrapper" aria-hidden="true"></span>
-                                                </span> -->
                                         entries
                                     </label>
                                 </div>
@@ -614,171 +650,6 @@
                                                     </button>
                                                 </td>
                                             </tr>
-                                            <tr>
-                                                <td>
-                                                    <h6 class="mb-0 fw-semibold text-primary">#32054</h6>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <img alt="person-picture" class="avatar avatar-sm cover-image me-2" src="{{asset('admin/images/ecommerce/jpg/13.jpg')}}">
-                                                        <h6 class="mb-0 fs-13 fw-semibold text-dark">Mobiles</h6>
-                                                    </div>
-                                                </td>
-                                                <td class="fw-semibold text-muted">03</td>
-                                                <td class="fw-semibold text-dark">$9,100</td>
-                                                <td class="text-dark fw-semibold">Cash on delivered</td>
-                                                <td><span class="badge bg-danger-transparent text-danger fw-semibold">No stock</span></td>
-                                                <td>
-                                                    <button type="button" class="btn bg-info-transparent">
-                                                        <i class="fe fe-edit text-info"></i>
-                                                    </button>
-                                                    <button type="button" class="btn bg-danger-transparent">
-                                                        <i class="fe fe-trash-2 text-danger"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <h6 class="mb-0 fw-semibold text-primary">#85423</h6>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex border-bottom-0">
-                                                        <div>
-                                                            <span class="avatar avatar-sm me-2"><img src="{{asset('admin/images/ecommerce/jpg/16.jpg')}}" alt="img" class="br-7 cover-image"></span>
-                                                        </div>
-                                                        <div class="flex-1 my-auto">
-                                                            <h6 class="mb-0 fs-13 fw-semibold text-dark">HP 200 Mouse &amp; Wireless Headphones</h6>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="fw-semibold text-muted">02</td>
-                                                <td class="fw-semibold text-dark">$2,987</td>
-                                                <td class="text-dark fw-semibold">Online Payment</td>
-                                                <td><span class="badge bg-danger-transparent text-danger fw-semibold">No stock</span></td>
-                                                <td>
-                                                    <button type="button" class="btn bg-info-transparent">
-                                                        <i class="fe fe-edit text-info"></i>
-                                                    </button>
-                                                    <button type="button" class="btn bg-danger-transparent">
-                                                        <i class="fe fe-trash-2 text-danger"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <h6 class="mb-0 fw-semibold text-primary">#61203</h6>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <img alt="person-picture" class="avatar avatar-sm cover-image me-2" src="{{asset('admin/images/ecommerce/jpg/15.jpg')}}">
-                                                        <h6 class="mb-0 fs-13 fw-semibold text-dark">Digital Camera</h6>
-                                                    </div>
-                                                </td>
-                                                <td class="fw-semibold text-muted">01</td>
-                                                <td class="fw-semibold text-dark">$10,987</td>
-                                                <td class="text-dark fw-semibold">Cash on delivered</td>
-                                                <td><span class="badge bg-success-transparent text-success fw-semibold">Available</span></td>
-                                                <td>
-                                                    <button type="button" class="btn bg-info-transparent">
-                                                        <i class="fe fe-edit text-info"></i>
-                                                    </button>
-                                                    <button type="button" class="btn bg-danger-transparent">
-                                                        <i class="fe fe-trash-2 text-danger"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <h6 class="mb-0 fw-semibold text-primary">#03215</h6>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <img alt="person-picture" class="avatar avatar-sm cover-image me-2" src="{{asset('admin/images/ecommerce/jpg/18.jpg')}}">
-                                                        <h6 class="mb-0 fs-13 fw-semibold text-dark">Clothes</h6>
-                                                    </div>
-                                                </td>
-                                                <td class="fw-semibold text-muted">04</td>
-                                                <td class="fw-semibold text-dark">$1,700</td>
-                                                <td class="text-dark fw-semibold">Online Payment</td>
-                                                <td><span class="badge bg-success-transparent text-success fw-semibold">Available</span></td>
-                                                <td>
-                                                    <button type="button" class="btn bg-info-transparent">
-                                                        <i class="fe fe-edit text-info"></i>
-                                                    </button>
-                                                    <button type="button" class="btn bg-danger-transparent">
-                                                        <i class="fe fe-trash-2 text-danger"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <h6 class="mb-0 fw-semibold text-primary">#63210</h6>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <img alt="person-picture" class="avatar avatar-sm cover-image me-2" src="{{asset('admin/images/ecommerce/jpg/12.jpg')}}">
-                                                        <h6 class="mb-0 fs-13 fw-semibold text-dark">Dell Laptops</h6>
-                                                    </div>
-                                                </td>
-                                                <td class="fw-semibold text-muted">02</td>
-                                                <td class="fw-semibold text-dark">$452</td>
-                                                <td class="text-dark fw-semibold">Cash On delivered</td>
-                                                <td><span class="badge bg-warning-transparent text-warning fw-semibold">Limited</span></td>
-                                                <td>
-                                                    <button type="button" class="btn bg-info-transparent">
-                                                        <i class="fe fe-edit text-info"></i>
-                                                    </button>
-                                                    <button type="button" class="btn bg-danger-transparent">
-                                                        <i class="fe fe-trash-2 text-danger"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <h6 class="mb-0 fw-semibold text-primary">#30215</h6>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <img alt="person-picture" class="avatar avatar-sm cover-image me-2" src="{{asset('admin/images/ecommerce/jpg/17.jpg')}}">
-                                                        <h6 class="mb-0 fs-13 fw-semibold text-dark">Dell Monitors</h6>
-                                                    </div>
-                                                </td>
-                                                <td class="fw-semibold text-muted">02</td>
-                                                <td class="fw-semibold text-dark">$2,700</td>
-                                                <td class="text-dark fw-semibold">Online Payment</td>
-                                                <td><span class="badge bg-success-transparent text-success fw-semibold">Available</span></td>
-                                                <td>
-                                                    <button type="button" class="btn bg-info-transparent">
-                                                        <i class="fe fe-edit text-info"></i>
-                                                    </button>
-                                                    <button type="button" class="btn bg-danger-transparent">
-                                                        <i class="fe fe-trash-2 text-danger"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td>
-                                                    <h6 class="mb-0 fw-semibold text-primary">#42150</h6>
-                                                </td>
-                                                <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <img alt="person-picture" class="avatar avatar-sm cover-image me-2" src="{{asset('admin/images/ecommerce/jpg/6.jpg')}}">
-                                                        <h6 class="mb-0 fs-13 fw-semibold text-dark">Laptop Bags</h6>
-                                                    </div>
-                                                </td>
-                                                <td class="fw-semibold text-muted">01</td>
-                                                <td class="fw-semibold text-dark">$428</td>
-                                                <td class="text-dark fw-semibold">Cash On delivered</td>
-                                                <td><span class="badge bg-warning-transparent text-warning fw-semibold">Limited</span></td>
-                                                <td>
-                                                    <button type="button" class="btn bg-info-transparent">
-                                                        <i class="fe fe-edit text-info"></i>
-                                                    </button>
-                                                    <button type="button" class="btn bg-danger-transparent">
-                                                        <i class="fe fe-trash-2 text-danger"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -813,7 +684,7 @@
         </div>
     </div>
 </div>
-<div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModal" aria-hidden="true">
+<!-- <div class="modal fade" id="searchModal" tabindex="-1" aria-labelledby="searchModal" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-body">
@@ -864,6 +735,6 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 @endsection
