@@ -11,21 +11,12 @@
          <div class="ms-md-1 mb-1 mb-md-0 ms-0">
             <nav>
                <ol class="breadcrumb mb-0">
-                  <li class="breadcrumb-item active" aria-current="page">Deposit</li>
-                  <li class="breadcrumb-item"><a href="javascript:void(0);">Deposit Data</a></li>
+                  <li class="breadcrumb-item active" aria-current="page">Activity</li>
+                  <li class="breadcrumb-item"><a href="javascript:void(0);">Activity Data</a></li>
                </ol>
             </nav>
          </div>
          <div class="page-title fw-semibold fs-18 mb-0">
-            <div>
-               @can('Deposit Add')
-               <a href="{{route('admin.deposits.create')}}" class="btn bg-warning-transparent text-warning btn-sm" data-bs-toggle="tooltip" title="" data-bs-placement="bottom" data-bs-original-title="Add New">
-                  <span>
-                     <i class="fa fa-plus"></i>
-                  </span>
-               </a>
-               @endcan
-            </div>
          </div>
       </div>
       <div class="row">
@@ -36,17 +27,16 @@
                      <table id="responsiveDataTable" class="table table-bordered text-nowrap w-100">
                         <thead>
                            <tr>
-                              <th><span>Deposit ID</span></th>
-                              <th><span>Trnx. ID</span></th>
-                              <th><span>Customer Name</span></th>
-                              <th><span>Amount</span></th>
-                              <th><span>Payment Method</span></th>
-                              <th><span>Plan</span></th>
-                              <th><span>Reference Number</span></th>
-                              <th><span>Source</span></th>
+                              <th><span>Activity ID</span></th>
+                              <th><span>User ID</span></th>
+                              <th><span>Type</span></th>
+                              <th><span>Details</span></th>
+                              <th><span>IP Address</span></th>
+                              <th><span>Device</span></th>
+                              <th><span>Browser</span></th>
+                              <th><span>OS</span></th>
                               <th><span>Created At</span></th>
                               <th><span>Updated At</span></th>
-                              <th><span>Status</span></th>
                               <th>Action</th>
                            </tr>
                         </thead>
@@ -82,38 +72,38 @@
          processing: true,
          serverSide: true,
          responsive: true,
-         ajax: "{{ route('admin.deposits.index') }}",
+         ajax: "{{ route('admin.activity.index') }}",
          columns: [{
                data: 'id',
                name: 'id'
             }, // Deposit ID
             {
-               data: 'txn_id',
-               name: 'txn_id'
-            }, // FIXED: matches DB
-            {
-               data: 'user',
-               name: 'user'
-            }, // Will show user id
-            {
-               data: 'amount',
-               name: 'amount'
+               data: 'user_id',
+               name: 'user_id'
             },
             {
-               data: 'payment_mode',
-               name: 'payment_mode'
+               data: 'type',
+               name: 'type'
             },
             {
-               data: 'plan',
-               name: 'plan'
-            }, // Will show plan id
-            {
-               data: 'reference_number',
-               name: 'reference_number'
+               data: 'details',
+               name: 'details'
             },
             {
-               data: 'source',
-               name: 'source'
+               data: 'ip_address',
+               name: 'ip_address'
+            },
+            {
+               data: 'device',
+               name: 'device'
+            },
+            {
+               data: 'browser',
+               name: 'browser'
+            },
+            {
+               data: 'os',
+               name: 'os'
             },
             {
                data: 'created_at',
@@ -122,32 +112,6 @@
             {
                data: 'updated_at',
                name: 'updated_at'
-            },
-            {
-               data: 'status',
-               name: 'status',
-               render: function(data) {
-                  let statusText, statusClass;
-                  switch (parseInt(data)) {
-                     case 0:
-                        statusText = 'Pending';
-                        statusClass = 'bg-warning';
-                        break;
-                     case 1:
-                        statusText = 'Approved';
-                        statusClass = 'bg-success';
-                        break;
-                     case 2:
-                        statusText = 'Rejected';
-                        statusClass = 'bg-danger';
-                        break;
-                     default:
-                        statusText = 'Unknown';
-                        statusClass = 'bg-secondary';
-                        break;
-                  }
-                  return '<span class="badge ' + statusClass + '">' + statusText + '</span>';
-               }
             },
             {
                data: 'action',
@@ -159,19 +123,19 @@
       });
 
       // Delete action
-      $('#responsiveDataTable').on('submit', '.delete-deposit-form', function(e) {
+      $('#responsiveDataTable').on('submit', '.delete-activity-form', function(e) {
          e.preventDefault();
 
          let form = $(this);
          let url = form.attr('action');
 
-         if (confirm('Are you sure to delete this deposit entry?')) {
+         if (confirm('Are you sure to delete this activity entry?')) {
             $.ajax({
                url: url,
                type: 'POST',
                data: form.serialize(),
                success: function(response) {
-                  toastr.success(response.message || 'Deposit deleted successfully!');
+                  toastr.success(response.message || 'Activity deleted successfully!');
                   table.ajax.reload(); // Reload DataTable (better than full page reload)
                },
                error: function(xhr) {

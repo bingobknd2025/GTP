@@ -750,12 +750,12 @@
                                 @endcan
                                 @can('Customer Activity')
                                 <li class="slide">
-                                    <a href="{{ route('admin.activity.index') }}" class="side-menu__item"> Customer Activity</a>
+                                    <a href="{{ route('admin.customer_activity.index') }}" class="side-menu__item"> Customer Activity</a>
                                 </li>
                                 @endcan
                                 @can('Franchise Activity')
                                 <li class="slide">
-                                    <a href="{{ route('admin.activity.index') }}" class="side-menu__item"> Franchise Activity</a>
+                                    <a href="{{ route('admin.franchise_activity.index') }}" class="side-menu__item"> Franchise Activity</a>
                                 </li>
                                 @endcan
                             </ul>

@@ -36,7 +36,6 @@ class Franchise extends Authenticatable implements JWTSubject
         'status' => 'string',
     ];
 
-    // ✅ JWT Required Methods
     public function getJWTIdentifier()
     {
         return $this->getKey();

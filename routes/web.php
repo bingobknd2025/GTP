@@ -154,11 +154,25 @@ Route::middleware('auth')->group(function () {
     Route::get('/user/import-excel/view', [UserController::class, 'import_excel_view'])->name('admin.users.import_excel_view')->middleware(['permission:User Excel Import View']);
     Route::post('/user/import-excel', [UserController::class, 'import_excel'])->name('admin.users.import_excel')->middleware(['permission:User Excel Import']);
 
-    // Activity Routes
+    // Admin Activity Routes
     Route::prefix('admin/activity')->name('admin.activity.')->group(function () {
         Route::get('/', [ActivityController::class, 'index'])->name('index')->middleware(['permission:Admin Activity']);
         Route::get('show/{id}', [ActivityController::class, 'show'])->name('show')->middleware(['permission:Admin Activity']);
         Route::delete('destroy/{id}', [ActivityController::class, 'destroy'])->name('destroy')->middleware(['permission:Admin Activity']);
+    });
+
+    // Customer Activity Routes
+    Route::prefix('admin/customer-activity')->name('admin.customer_activity.')->group(function () {
+        Route::get('/', [ActivityController::class, 'indexCustomer'])->name('index')->middleware(['permission:Customer Activity']);
+        Route::get('show/{id}', [ActivityController::class, 'showCustomer'])->name('show')->middleware(['permission:Customer Activity']);
+        Route::delete('destroy/{id}', [ActivityController::class, 'destroyCustomer'])->name('destroy')->middleware(['permission:Customer Activity']);
+    });
+
+    // Franchise Activity Routes
+    Route::prefix('admin/franchise-activity')->name('admin.franchise_activity.')->group(function () {
+        Route::get('/', [ActivityController::class, 'indexFranchise'])->name('index')->middleware(['permission:Franchise Activity']);
+        Route::get('show/{id}', [ActivityController::class, 'showFranchise'])->name('show')->middleware(['permission:Franchise Activity']);
+        Route::delete('destroy/{id}', [ActivityController::class, 'destroyFranchise'])->name('destroy')->middleware(['permission:Franchise Activity']);
     });
 
     // Setting Routes
