@@ -743,4 +743,239 @@ class FranchiseAuthController extends Controller
             ], 500);
         }
     }
+
+    public function requestChangePasswordOtp(Request $request)
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            // Validate current password first
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required|string|min:6',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            if (!Hash::check($request->current_password, $franchise->password)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Current password is incorrect'
+                ], 400);
+            }
+
+            // Generate & send OTP
+            OtpHelper::generateAndSendOtps($franchise, 'change_password');
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'OTP sent to your registered email for verification.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function changePassword(Request $request)
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            // Validate input
+            $validator = Validator::make($request->all(), [
+                'type'             => 'required|string|in:change_password',
+                'current_password' => 'required|string|min:6',
+                'new_password'     => 'required|string|min:6|confirmed',
+                'otp'              => 'required|digits:6', // Assuming OTP = 6 digits
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            // Check old password
+            if (!Hash::check($request->current_password, $franchise->password)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Current password is incorrect'
+                ], 400);
+            }
+
+            $otpData = Otp::where('franchise_id', $franchise->id)
+                ->where('type', $request->type)
+                ->where('otp', $request->otp)
+                ->first();
+
+            if (!$otpData) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid OTP'
+                ], 400);
+            }
+
+            if (now()->greaterThan($otpData->expires_at)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'OTP expired'
+                ], 400);
+            }
+
+            // Update password
+            $franchise->password = Hash::make($request->new_password);
+            $franchise->save();
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Password changed successfully'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:franchises,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $franchise = Franchise::where('email', $request->email)->first();
+        if (!$franchise) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'franchise not found with this email.'
+            ], 404);
+        }
+
+        OtpHelper::generateAndSendOtps($franchise, 'forgot_password');
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'OTP has been sent to your email for password reset.'
+        ], 200);
+    }
+
+    public function resendForgotPasswordOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:franchises,email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $franchise = Franchise::where('email', $request->email)->first();
+        if (!$franchise) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'franchise not found with this email.'
+            ], 404);
+        }
+
+        // Invalidate previous OTPs for forgot_password
+        Otp::where('customer_id', $franchise->id)
+            ->where('type', 'forgot_password')
+            ->delete();
+
+        // Generate & send new OTP with same type
+        OtpHelper::generateAndSendOtp($franchise, 'forgot_password');
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'A new OTP has been sent to your email for password reset.'
+        ], 200);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email'        => 'required|email|exists:franchises,email',
+            'otp'          => 'required|digits:6',
+            'new_password' => 'required|string|min:6|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $franchise = Franchise::where('email', $request->email)->first();
+        if (!$franchise) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'franchise not found with this email.'
+            ], 404);
+        }
+
+        $otpData = Otp::where('customer_id', $franchise->id)
+            ->where('type', 'forgot_password')
+            ->where('otp', $request->otp)
+            ->first();
+
+        if (!$otpData) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid OTP.'
+            ], 400);
+        }
+
+        if (now()->greaterThan($otpData->expires_at)) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'OTP has expired. Please request a new one.'
+            ], 400);
+        }
+
+        $franchise->password = Hash::make($request->new_password);
+        $franchise->save();
+
+        $otpData->delete();
+
+        Mail::raw("Your password has been reset successfully.", function ($m) use ($franchise) {
+            $m->to($franchise->email, $franchise->fname)
+                ->subject('Password Reset Successful')
+                ->from(config('mail.from.address'), config('mail.from.name'));
+        });
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Password has been reset successfully. You can now login with your new password.'
+        ], 200);
+    }
 }
