@@ -548,4 +548,51 @@ class CustomerDataController extends Controller
             ], 500);
         }
     }
+
+    public function listTickets(Request $request)
+    {
+        try {
+
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+            $search = $request->input('search');
+            $perPage = $request->input('per_page', 10);
+
+            $query = Ticket::where('customer_id', $customer->id)
+                ->orderBy('created_at', 'desc');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('subject', 'like', "%$search%")
+                        ->orWhere('status', $search);
+                });
+            }
+
+            $tickets = $query->paginate($perPage, ['id', 'subject', 'message', 'created_at']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Support tickets retrieved successfully',
+                'data'    => $tickets
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
