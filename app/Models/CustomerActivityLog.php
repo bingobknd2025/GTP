@@ -14,6 +14,6 @@ class CustomerActivityLog extends Model
         'customer_id',
         'message',
         'type',
-        'created_by',
+        'ip_address',
     ];
 }

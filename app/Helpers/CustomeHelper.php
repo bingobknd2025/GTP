@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use App\Models\CustomerActivityLog;
 use App\Models\UserActivity;
 use Illuminate\Support\Facades\Request;
 use Jenssegers\Agent\Agent;
@@ -12,7 +13,7 @@ class CustomeHelper
   {
     $agent = new Agent();
     $ip = request()->ip();
-    $route = Request::path();
+    $route = Request::fullUrl();
 
     $device  = $agent->device();
     $browser = $agent->browser();
@@ -30,6 +31,32 @@ class CustomeHelper
       'device'     => $device,
       'browser'    => $browser,
       'os'         => $os,
+    ]);
+  }
+
+  public static function logCustomerActivity($customerId, $message)
+  {
+    $fullUrl = Request::fullUrl();
+    $ip  = request()->ip();
+
+    return CustomerActivityLog::create([
+      'customer_id' => $customerId,
+      'message'     => $message,
+      'type'        => $fullUrl,
+      'ip_address'  => $ip,
+    ]);
+  }
+
+  public static function logFranchiseActivity($franchiseId, $message)
+  {
+    $fullUrl = Request::fullUrl();
+    $ip  = request()->ip();
+
+    return CustomerActivityLog::create([
+      'franchise_id' => $franchiseId,
+      'message'      => $message,
+      'type'         => $fullUrl,
+      'ip_address'   => $ip,
     ]);
   }
 }

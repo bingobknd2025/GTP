@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Helpers\CustomeHelper;
 use App\Helpers\OtpHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
@@ -44,6 +45,8 @@ class CustomerDataController extends Controller
             }
 
             $customerId = $customer->id;
+
+            CustomeHelper::logCustomerActivity($customerId, 'Viewed Dashboard');
 
             $customer = Customer::find($customerId);
             $totalOrders = Order::where('customer_id', $customerId)->count();
