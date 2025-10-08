@@ -68,8 +68,8 @@ class ActivityController extends Controller
                 })
 
                 ->addColumn('action', function ($row) {
-                    $deleteUrl = route('admin.activities.destroy', $row->id);
-                    $showUrl   = route('admin.activities.show', $row->id);
+                    $deleteUrl = route('admin.activity.destroy', $row->id);
+                    $showUrl   = route('admin.activity.show', $row->id);
 
                     $btn  = '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1" title="View"><i class="fas fa-eye"></i></a>';
                     $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline delete-kyc-form">'
