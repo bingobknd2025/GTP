@@ -56,7 +56,10 @@ Route::middleware('api.key')->group(function () {
                 Route::post('change-password', [CustomerAuthController::class, 'changePassword']);
 
 
-
+                // Support Ticket APIs
+                Route::post('ticket-create', [CustomerDataController::class, 'createTicket']);
+                // Route::post('tickets-list', [CustomerDataController::class, 'listTickets']);
+                // Route::post('ticket-details', [CustomerDataController::class, 'ticketDetails']);
 
                 Route::post('logout', [CustomerAuthController::class, 'logout']);
             });

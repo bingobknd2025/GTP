@@ -11,6 +11,7 @@ use App\Models\Kyc;
 use App\Models\Order;
 use App\Models\Otp;
 use App\Models\Setting;
+use App\Models\Ticket;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -399,6 +400,151 @@ class CustomerDataController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateProfile(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'fname' => 'required|string|max:100',
+                'lname' => 'required|string|max:100',
+                'email' => 'required|email|max:255|unique:customers,email,' . $customer->id,
+                'phone' => 'nullable|string|max:20',
+                'address' => 'nullable|string|max:500',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 400);
+            }
+
+            $customer->fname   = $request->fname;
+            $customer->lname   = $request->lname;
+            $customer->email   = $request->email;
+            $customer->phone   = $request->phone;
+            $customer->address = $request->address;
+            $customer->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'data'    => $customer
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function createTicket(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'email' => 'required|email|max:255|exists:customers,email',
+                'subject' => 'required|string|max:255',
+                'message' => 'required|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first()
+                ], 400);
+            }
+
+            $ticket = Ticket::create([
+                'customer_id' => $customer->id,
+                'name' => $request->name,
+                'email' => $request->email,
+                'subject' => $request->subject,
+                'message' => $request->message,
+            ]);
+
+            // Common mail data
+            $mailData = [
+                'ticket_id' => $ticket->id,
+                'customer_name' => $customer->fname . ' ' . $customer->lname,
+                'customer_email' => $customer->email,
+                'subject' => $ticket->subject,
+                'message_body' => $ticket->message,
+                'created_at' => $ticket->created_at,
+            ];
+
+            $mainSettings = Setting::first();
+
+            if ($mainSettings && $mainSettings->mail_from_email) {
+                Mail::send('emails.support-ticket', array_merge($mailData, ['receiver_type' => 'admin']), function ($message) use ($mainSettings, $mailData) {
+                    $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                        ->subject('New Support Ticket - ' . $mailData['subject']);
+                });
+            }
+
+            if ($customer->franchise_id) {
+                $franchise = Franchise::find($customer->franchise_id);
+                if ($franchise && $franchise->email) {
+                    Mail::send('emails.support-ticket', array_merge($mailData, ['receiver_type' => 'franchise']), function ($message) use ($franchise, $mailData) {
+                        $message->to($franchise->email, $franchise->name ?? '')
+                            ->subject('Customer Support Ticket - ' . $mailData['subject']);
+                    });
+                }
+            }
+
+            if ($customer && $customer->email) {
+                Mail::send('emails.support-ticket', array_merge($mailData, ['receiver_type' => 'customer']), function ($message) use ($customer, $mailData) {
+                    $message->to($customer->email, $customer->fname ?? '')
+                        ->subject('Your Ticket Has Been Created - ' . $mailData['subject']);
+                });
+            }
+
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Support ticket created successfully and emails sent',
+                'data' => $ticket
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
             ], 500);
         }
     }
