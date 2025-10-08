@@ -132,6 +132,43 @@ class FranchiseDataController extends Controller
         }
     }
 
+    public function profile()
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
+                ], 404);
+            }
+
+            $franchiseId = $franchise->id;
+            CustomeHelper::logFranchiseActivity($franchiseId, 'Viewed Profile');
+
+            $franchise = Franchise::find($franchiseId);
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Franchise profile retrieved successfully',
+                'data'    => $franchise
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function getCustomers(Request $request)
     {
         try {
@@ -605,7 +642,6 @@ class FranchiseDataController extends Controller
             ], 500);
         }
     }
-
 
     public function orderDetails(Request $request)
     {
