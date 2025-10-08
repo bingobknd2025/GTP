@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use App\Models\CustomerActivityLog;
+use App\Models\FranchiseActivityLog;
 use App\Models\UserActivity;
 use Illuminate\Support\Facades\Request;
 use Jenssegers\Agent\Agent;
@@ -52,7 +53,7 @@ class CustomeHelper
     $fullUrl = Request::fullUrl();
     $ip  = request()->ip();
 
-    return CustomerActivityLog::create([
+    return FranchiseActivityLog::create([
       'franchise_id' => $franchiseId,
       'message'      => $message,
       'type'         => $fullUrl,

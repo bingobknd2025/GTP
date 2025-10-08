@@ -12,7 +12,7 @@
             <nav>
                <ol class="breadcrumb mb-0">
                   <li class="breadcrumb-item active" aria-current="page">Activity</li>
-                  <li class="breadcrumb-item"><a href="javascript:void(0);">Activity Data</a></li>
+                  <li class="breadcrumb-item"><a href="javascript:void(0);">Franchise Activity Data</a></li>
                </ol>
             </nav>
          </div>
@@ -27,14 +27,11 @@
                      <table id="responsiveDataTable" class="table table-bordered text-nowrap w-100">
                         <thead>
                            <tr>
-                              <th><span>Activity ID</span></th>
-                              <th><span>User ID</span></th>
+                              <th><span>ID</span></th>
+                              <th><span>Franchise ID</span></th>
                               <th><span>Type</span></th>
-                              <th><span>Details</span></th>
+                              <th><span>Message</span></th>
                               <th><span>IP Address</span></th>
-                              <th><span>Device</span></th>
-                              <th><span>Browser</span></th>
-                              <th><span>OS</span></th>
                               <th><span>Created At</span></th>
                               <th><span>Updated At</span></th>
                               <th>Action</th>
@@ -72,38 +69,26 @@
          processing: true,
          serverSide: true,
          responsive: true,
-         ajax: "{{ route('admin.activity.index') }}",
+         ajax: "{{ route('admin.franchise_activity.index') }}",
          columns: [{
                data: 'id',
                name: 'id'
-            }, // Deposit ID
+            },
             {
-               data: 'user_id',
-               name: 'user_id'
+               data: 'franchise_id',
+               name: 'franchise_id'
             },
             {
                data: 'type',
                name: 'type'
             },
             {
-               data: 'details',
-               name: 'details'
+               data: 'message',
+               name: 'message'
             },
             {
                data: 'ip_address',
                name: 'ip_address'
-            },
-            {
-               data: 'device',
-               name: 'device'
-            },
-            {
-               data: 'browser',
-               name: 'browser'
-            },
-            {
-               data: 'os',
-               name: 'os'
             },
             {
                data: 'created_at',
@@ -123,19 +108,19 @@
       });
 
       // Delete action
-      $('#responsiveDataTable').on('submit', '.delete-activity-form', function(e) {
+      $('#responsiveDataTable').on('submit', '.delete-franchise-activity-form', function(e) {
          e.preventDefault();
 
          let form = $(this);
          let url = form.attr('action');
 
-         if (confirm('Are you sure to delete this activity entry?')) {
+         if (confirm('Are you sure to delete this franchise activity entry?')) {
             $.ajax({
                url: url,
                type: 'POST',
                data: form.serialize(),
                success: function(response) {
-                  toastr.success(response.message || 'Activity deleted successfully!');
+                  toastr.success(response.message || 'Franchise activity deleted successfully!');
                   table.ajax.reload(); // Reload DataTable (better than full page reload)
                },
                error: function(xhr) {

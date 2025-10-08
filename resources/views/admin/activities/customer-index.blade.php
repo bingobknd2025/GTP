@@ -12,7 +12,7 @@
             <nav>
                <ol class="breadcrumb mb-0">
                   <li class="breadcrumb-item active" aria-current="page">Activity</li>
-                  <li class="breadcrumb-item"><a href="javascript:void(0);">Activity Data</a></li>
+                  <li class="breadcrumb-item"><a href="javascript:void(0);">Customer Activity Data</a></li>
                </ol>
             </nav>
          </div>

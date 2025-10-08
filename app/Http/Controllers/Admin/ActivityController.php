@@ -9,6 +9,7 @@ use App\Models\Kyc;
 use App\Models\Customer;
 use App\Models\CustomerActivityLog;
 use App\Models\Franchise;
+use App\Models\FranchiseActivityLog;
 use App\Models\Setting;
 use App\Models\UserActivity;
 use Carbon\Carbon;
@@ -158,35 +159,25 @@ class ActivityController extends Controller
     public function indexFranchise(Request $request)
     {
         if ($request->ajax()) {
-            $data = UserActivity::orderBy('id', 'DESC')->get();
+            $data = FranchiseActivityLog::orderBy('id', 'DESC')->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()
 
-                ->addColumn('user_id', function ($row) {
-                    return $row->user_id ? $row->user_id : 'N/A';
+                ->addColumn('franchise_id', function ($row) {
+                    return $row->franchise_id ? $row->franchise_id : 'N/A';
                 })
 
                 ->addColumn('type', function ($row) {
                     return $row->type ? $row->type : 'N/A';
                 })
 
-                ->addColumn('details', function ($row) {
-                    return $row->details ? $row->details : 'N/A';
+                ->addColumn('message', function ($row) {
+                    return $row->message ? $row->message : 'N/A';
                 })
 
                 ->addColumn('ip_address', function ($row) {
                     return $row->ip_address ?? 'N/A';
-                })
-
-                ->addColumn('device', function ($row) {
-                    return $row->device ?? 'N/A';
-                })
-                ->addColumn('browser', function ($row) {
-                    return $row->browser ?? 'N/A';
-                })
-                ->addColumn('os', function ($row) {
-                    return $row->os ?? 'N/A';
                 })
                 ->addColumn('created_at', function ($row) {
                     return $row->created_at ? $row->created_at->format('Y-m-d H:i:s') : 'N/A';
@@ -208,13 +199,10 @@ class ActivityController extends Controller
                 })
 
                 ->rawColumns([
-                    'user_id',
+                    'franchise_id',
                     'type',
-                    'details',
+                    'message',
                     'ip_address',
-                    'device',
-                    'browser',
-                    'os',
                     'created_at',
                     'updated_at',
                     'action'
@@ -240,7 +228,7 @@ class ActivityController extends Controller
 
     public function showFranchise($id): View
     {
-        $activity = UserActivity::findOrFail($id);
+        $activity = FranchiseActivityLog::findOrFail($id);
         return view('admin.activities.franchise-show', compact('activity'));
     }
 
@@ -254,7 +242,7 @@ class ActivityController extends Controller
 
     public function destroyCustomer($id): JsonResponse
     {
-        $activity = UserActivity::findOrFail($id);
+        $activity = CustomerActivityLog::findOrFail($id);
         $activity->delete();
 
         return response()->json(['success' => true, 'message' => 'Customer activity entry deleted successfully!']);
@@ -262,7 +250,7 @@ class ActivityController extends Controller
 
     public function destroyFranchise($id): JsonResponse
     {
-        $activity = UserActivity::findOrFail($id);
+        $activity = FranchiseActivityLog::findOrFail($id);
         $activity->delete();
 
         return response()->json(['success' => true, 'message' => 'Franchise activity entry deleted successfully!']);
