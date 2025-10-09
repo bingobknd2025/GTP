@@ -130,18 +130,17 @@ class CustomerDataController extends Controller
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'Invalid or missing token'
                 ], 401);
             }
 
             if (!$customer) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => 'Customer not found'
                 ], 404);
             }
-
 
             $ordersLast24Hours = Order::where('customer_id', $customer->id)
                 ->where('created_at', '>=', now()->subDay())
@@ -155,18 +154,10 @@ class CustomerDataController extends Controller
             }
 
             $validate = Validator::make($request->all(), [
-                'franchise_id'            => 'required|exists:franchises,id',
-                'purity'                  => 'nullable|string|max:100',
-                'before_melting_weight'   => 'required|numeric|min:0',
-                'after_melting_weight'    => 'nullable|numeric|min:0',
-                'unite_price'             => 'required|numeric|min:0',
-                'total_price'             => 'required|numeric|min:0',
-                'amount_paid'             => 'nullable|numeric|min:0',
-                'order_note'              => 'nullable|string',
-                'before_image'            => 'nullable|array',
-                'before_image.*'          => 'image|mimes:jpeg,png,jpg|max:3072',
-                'after_image'             => 'nullable|array',
-                'after_image.*'           => 'image|mimes:jpeg,png,jpg|max:3072',
+                'purity' => 'required|in:18k,20k,22k,24k',
+                'before_melting_weight' => 'required|numeric|min:0.01',
+                'before_image' => 'nullable|array|max:4',
+                'before_image.*' => 'image|mimes:jpeg,png,jpg|max:3072',
             ]);
 
             if ($validate->fails()) {
@@ -177,6 +168,25 @@ class CustomerDataController extends Controller
             }
 
             $input = $request->all();
+            $purity = (int) $input['purity'];
+            $weight = $input['before_melting_weight'];
+
+            $goldApi = [
+                "price_gram_24k" => 11526.8432,
+                "price_gram_22k" => 10566.2729,
+                "price_gram_20k" => 9605.7027,
+                "price_gram_18k" => 8645.1324,
+            ];
+
+            $purityMap = [
+                24 => 'price_gram_24k',
+                22 => 'price_gram_22k',
+                20 => 'price_gram_20k',
+                18 => 'price_gram_18k',
+            ];
+
+            $unitPrice = $goldApi[$purityMap[$purity]] ?? 0;
+            $totalPrice = $unitPrice * $weight;
 
             DB::beginTransaction();
             try {
@@ -186,65 +196,71 @@ class CustomerDataController extends Controller
                 $seqNumber = str_pad($nextSequence, 3, '0', STR_PAD_LEFT);
 
                 $order_no = 'ORDER' . $yearPart . 'NO' . $seqNumber;
-                $invoice  = 'INV'   . $yearPart . 'NO' . $seqNumber;
+                $invoice  = 'INV' . $yearPart . 'NO' . $seqNumber;
 
                 $order = new Order();
-                $order->customer_id           = $customer->id;
-                $order->franchise_id          = $input['franchise_id'];
-                $order->purity                = $input['purity'] ?? null;
-                $order->before_melting_weight = $input['before_melting_weight'];
-                $order->after_melting_weight  = $input['after_melting_weight'] ?? 0;
-                $order->unite_price           = $input['unite_price'];
-                $order->total_price           = $input['total_price'];
-                $order->amount_paid           = $input['amount_paid'] ?? 0;
-                $order->status                = 'Created';
-                $order->order_note            = $input['order_note'] ?? null;
-                $order->order_no              = $order_no;
-                $order->invoice               = $invoice;
+                $order->customer_id = $customer->id;
+                $order->franchise_id = Franchise::where('code', $customer->ref_by)->value('id') ?? null;
+                $order->purity = $purity;
+                $order->before_melting_weight = $weight;
+                $order->unite_price = $unitPrice;
+                $order->total_price = $totalPrice;
+                $order->status = 'Created';
+                $order->order_no = $order_no;
+                $order->invoice = $invoice;
 
                 $beforeImages = [];
                 if ($request->hasFile('before_image')) {
                     foreach ($request->file('before_image') as $file) {
-                        $beforeImages[] = $file->store('orders/before', 'public');
+                        if (count($beforeImages) < 4) {
+                            $beforeImages[] = $file->store('orders/before', 'public');
+                        }
                     }
                 }
                 $order->before_image = json_encode($beforeImages);
 
-                $afterImages = [];
-                if ($request->hasFile('after_image')) {
-                    foreach ($request->file('after_image') as $file) {
-                        $afterImages[] = $file->store('orders/after', 'public');
-                    }
-                }
-                $order->after_image = json_encode($afterImages);
-
                 $order->save();
-
                 DB::commit();
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
 
+            // Email Notifications (Admin, Franchise, Customer)
             $mainSettings = Setting::first();
             $user = $customer;
 
-            // Mail to Admin
+            // Admin Mail
             Mail::send('emails.order_notification', [
-                'order'    => $order,
+                'order' => $order,
                 'settings' => $mainSettings,
-                'for'      => 'admin'
+                'for' => 'admin'
             ], function ($message) use ($mainSettings, $user) {
                 $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
                     ->subject('New Order from ' . $user->fname . ' ' . $user->lname . ' on ' . config('app.name'));
             });
 
-            // Mail to User
+            // Franchise Mail
+            if ($user->ref_by) {
+                $franchise = Franchise::where('code', $user->ref_by)->first();
+                if ($franchise && $franchise->email) {
+                    Mail::send('emails.order_notification', [
+                        'order' => $order,
+                        'customer' => $user->fname . ' ' . $user->lname,
+                        'for' => 'franchise'
+                    ], function ($message) use ($franchise) {
+                        $message->to($franchise->email, $franchise->name ?? '')
+                            ->subject('New Order from Your Referred Customer on ' . config('app.name'));
+                    });
+                }
+            }
+
+            // Customer Mail
             if ($user && $user->email) {
                 Mail::send('emails.order_notification', [
                     'order' => $order,
-                    'user'  => $user,
-                    'for'   => 'user'
+                    'user' => $user,
+                    'for' => 'user'
                 ], function ($message) use ($user) {
                     $message->to($user->email, $user->fname ?? '')
                         ->subject('Your Order Has Been Created');
@@ -254,7 +270,7 @@ class CustomerDataController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully!',
-                'data'    => $order
+                'data' => $order
             ]);
         } catch (\Exception $e) {
             return response()->json([

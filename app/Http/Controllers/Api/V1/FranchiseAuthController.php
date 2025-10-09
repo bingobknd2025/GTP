@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Franchise;
 use App\Models\Kyc;
 use App\Models\Otp;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -188,6 +189,43 @@ class FranchiseAuthController extends Controller
             'status' => 'success',
             'message' => 'Successfully logged out'
         ], 200);
+    }
+
+    public function checkTokenExpiry(Request $request)
+    {
+        $token = $request->bearerToken();
+
+        if (!$token) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Token not provided'
+            ], 401);
+        }
+
+        try {
+            $payload = JWTAuth::setToken($token)->getPayload();
+
+            $exp = $payload->get('exp');
+            $currentTime = Carbon::now()->timestamp;
+
+            if ($currentTime >= $exp) {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Token has expired'
+                ], 401);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Token is valid',
+                'expires_at' => $exp
+            ]);
+        } catch (JWTException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Invalid token'
+            ], 401);
+        }
     }
 
     public function getAccessToken(Request $request)

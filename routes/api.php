@@ -62,6 +62,7 @@ Route::middleware('api.key')->group(function () {
                 // Route::post('ticket-details', [CustomerDataController::class, 'ticketDetails']);
 
                 Route::post('logout', [CustomerAuthController::class, 'logout']);
+                Route::post('check-token', [CustomerAuthController::class, 'checkTokenExpiry']);
             });
         });
 
@@ -73,6 +74,10 @@ Route::middleware('api.key')->group(function () {
             Route::middleware('auth:franchise')->group(function () {
 
                 Route::post('dashboard', [FranchiseDataController::class, 'dashboard']);
+                Route::post('profile', [FranchiseDataController::class, 'profile']);
+                Route::post('change-password-otp', [FranchiseAuthController::class, 'requestChangePasswordOtp']);
+                Route::post('change-password', [FranchiseAuthController::class, 'changePassword']);
+
                 // OTP API
                 Route::post('verify-otp', [FranchiseAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [FranchiseAuthController::class, 'resendOtp']);
@@ -93,9 +98,9 @@ Route::middleware('api.key')->group(function () {
                 Route::post('order-update', [FranchiseDataController::class, 'updateOrder']);
                 Route::post('order-details', [FranchiseDataController::class, 'orderDetails']);
 
-                Route::get('profile', function () {
-                    return auth('franchise')->user();
-                });
+
+                Route::post('logout', [FranchiseAuthController::class, 'logout']);
+                Route::post('check-token', [FranchiseAuthController::class, 'checkTokenExpiry']);
             });
         });
     });

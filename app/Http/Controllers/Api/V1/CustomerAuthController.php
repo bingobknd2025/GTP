@@ -109,6 +109,7 @@ class CustomerAuthController extends Controller
 
         return response()->json([
             'status'   => 'success',
+            'message'  => 'Login successful',
             'token'    => $token,
             'customer' => [
                 'id'             => $customer->id,
@@ -223,6 +224,44 @@ class CustomerAuthController extends Controller
             'status' => 'success',
             'message' => 'Successfully logged out'
         ], 200);
+    }
+
+
+    public function checkTokenExpiry(Request $request)
+    {
+        $token = $request->bearerToken();
+
+        if (!$token) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Token not provided'
+            ], 401);
+        }
+
+        try {
+            $payload = JWTAuth::setToken($token)->getPayload();
+
+            $exp = $payload->get('exp');
+            $currentTime = Carbon::now()->timestamp;
+
+            if ($currentTime >= $exp) {
+                return response()->json([
+                    'status' => 'failure',
+                    'message' => 'Token has expired'
+                ], 401);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Token is valid',
+                'expires_at' => $exp
+            ]);
+        } catch (JWTException $e) {
+            return response()->json([
+                'status' => 'failure',
+                'message' => 'Invalid token'
+            ], 401);
+        }
     }
 
     public function getAccessToken(Request $request)
