@@ -8,6 +8,8 @@ use App\Models\Order;
 use App\Models\Franchise;
 use App\Models\Kyc;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
+use App\Models\GoldRate;
 
 class HomeController extends Controller
 {
@@ -135,5 +137,78 @@ class HomeController extends Controller
       'kycGrowth',
       'totalRevenue'
     ));
+  }
+
+  public function getGoldprice()
+  {
+    $urls = [
+      'INR' => "https://www.goldapi.io/api/XAU/INR",
+      'USD' => "https://www.goldapi.io/api/XAU/USD"
+    ];
+
+    $goldRates = [];
+    $errors = [];
+
+    foreach ($urls as $currency => $url) {
+      try {
+        $response = Http::withHeaders([
+          'x-access-token' => 'goldapi-r72pslvwlb57r-io',
+        ])->get($url);
+
+        if ($response->failed()) {
+          $errors[$currency] = "API failed with status " . $response->status();
+          continue;
+        }
+
+        $data = $response->json();
+
+        if (!$data || !isset($data['price'])) {
+          $errors[$currency] = "Invalid or empty response for {$currency}";
+          continue;
+        }
+
+        // Check if record exists
+        $goldRate = GoldRate::where('currency', $currency)->first();
+
+        if ($goldRate) {
+          // Update only existing record
+          $goldRate->update([
+            'live_price'       => $data['price'] ?? null,
+            'price_gram_24k'   => $data['price_gram_24k'] ?? null,
+            'price_gram_22k'   => $data['price_gram_22k'] ?? null,
+            'price_gram_21k'   => $data['price_gram_21k'] ?? null,
+            'price_gram_20k'   => $data['price_gram_20k'] ?? null,
+            'price_gram_18k'   => $data['price_gram_18k'] ?? null,
+            'price_gram_16k'   => $data['price_gram_16k'] ?? null,
+            'price_gram_14k'   => $data['price_gram_14k'] ?? null,
+            'price_gram_10k'   => $data['price_gram_10k'] ?? null,
+            'fetched_at'       => Carbon::now()->format('Y-m-d H:i:00'),
+          ]);
+        } else {
+          // Skip if not found
+          $errors[$currency] = "Record not found for {$currency}, skipped update.";
+          continue;
+        }
+
+        $goldRates[] = $goldRate->fresh();
+      } catch (\Exception $e) {
+        $errors[$currency] = "Exception: " . $e->getMessage();
+      }
+    }
+
+    if (empty($goldRates)) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'No gold rates updated.',
+        'errors' => $errors
+      ], 500);
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Gold rates updated successfully!',
+      'data' => $goldRates,
+      'errors' => $errors
+    ], 200);
   }
 }
