@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\CustomerDataController;
 use App\Http\Controllers\Api\V1\FranchiseAuthController;
 use App\Http\Controllers\Api\V1\FranchiseDataController;
 use App\Http\Controllers\HomeController;
+use App\Models\Franchise;
 use Dflydev\DotAccessData\Data;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -15,7 +16,7 @@ Route::middleware('api.key')->group(function () {
         Route::post('get-franchises', [CustomerDataController::class, 'getFranchises']);
         Route::post('enquiry-store', [CustomerDataController::class, 'enquiryStore']);
         Route::post('/gold/fetch', [HomeController::class, 'getGoldprice'])->name('admin.gold.fetch');
-        Route::post('/valid-franchise', [CustomerDataController::class, 'getValidFranchises'])->name('valid.franchise');
+        Route::post('/valid-franchise', [FranchiseDataController::class, 'getValidFranchises'])->name('valid.franchise');
 
         Route::prefix('customer')->group(function () {
             Route::post('register', [CustomerAuthController::class, 'register']);

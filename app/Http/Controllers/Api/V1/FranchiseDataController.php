@@ -20,7 +20,40 @@ use Illuminate\Support\Facades\Storage;
 
 class FranchiseDataController extends Controller
 {
+    public function getValidFranchises(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'code' => 'required|string|max:20',
+        ]);
 
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation Error',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $code = $request->input('code');
+
+        $franchises = Franchise::where('code', $code)
+            ->where('status', 'Approved')
+            ->get(['id', 'name',  'email', 'code']);
+
+        if ($franchises->isEmpty()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'No active franchises found for the provided code.',
+                'data'    => []
+            ], 404);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Active franchises retrieved successfully.',
+            'data'    => $franchises
+        ], 200);
+    }
 
     public function dashboard()
     {
