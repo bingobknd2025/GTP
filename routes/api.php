@@ -15,6 +15,7 @@ Route::middleware('api.key')->group(function () {
         Route::post('get-franchises', [CustomerDataController::class, 'getFranchises']);
         Route::post('enquiry-store', [CustomerDataController::class, 'enquiryStore']);
         Route::post('/gold/fetch', [HomeController::class, 'getGoldprice'])->name('admin.gold.fetch');
+        Route::post('/valid-franchise', [CustomerDataController::class, 'getValidFranchises'])->name('valid.franchise');
 
         Route::prefix('customer')->group(function () {
             Route::post('register', [CustomerAuthController::class, 'register']);
