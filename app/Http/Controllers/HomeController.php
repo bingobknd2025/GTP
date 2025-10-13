@@ -157,6 +157,14 @@ class HomeController extends Controller
 
         if ($response->failed()) {
           $errors[$currency] = "API failed with status " . $response->status();
+
+          // Fallback: get previous record from DB
+          $existing = GoldRate::where('currency', $currency)->latest('fetched_at')->first();
+          if ($existing) {
+            $goldRates[] = $existing;
+          } else {
+            $errors[$currency] .= " | No previous record found in DB.";
+          }
           continue;
         }
 
@@ -164,14 +172,21 @@ class HomeController extends Controller
 
         if (!$data || !isset($data['price'])) {
           $errors[$currency] = "Invalid or empty response for {$currency}";
+
+          // Fallback from DB
+          $existing = GoldRate::where('currency', $currency)->latest('fetched_at')->first();
+          if ($existing) {
+            $goldRates[] = $existing;
+          } else {
+            $errors[$currency] .= " | No previous record found in DB.";
+          }
           continue;
         }
 
-        // Check if record exists
+        // ✅ Update only existing record
         $goldRate = GoldRate::where('currency', $currency)->first();
 
         if ($goldRate) {
-          // Update only existing record
           $goldRate->update([
             'live_price'       => $data['price'] ?? null,
             'price_gram_24k'   => $data['price_gram_24k'] ?? null,
@@ -184,29 +199,49 @@ class HomeController extends Controller
             'price_gram_10k'   => $data['price_gram_10k'] ?? null,
             'fetched_at'       => Carbon::now()->format('Y-m-d H:i:00'),
           ]);
+          $goldRates[] = $goldRate->fresh();
         } else {
-          // Skip if not found
-          $errors[$currency] = "Record not found for {$currency}, skipped update.";
-          continue;
+          // If no record, create a new one
+          $newRate = GoldRate::create([
+            'currency'         => $currency,
+            'live_price'       => $data['price'] ?? null,
+            'price_gram_24k'   => $data['price_gram_24k'] ?? null,
+            'price_gram_22k'   => $data['price_gram_22k'] ?? null,
+            'price_gram_21k'   => $data['price_gram_21k'] ?? null,
+            'price_gram_20k'   => $data['price_gram_20k'] ?? null,
+            'price_gram_18k'   => $data['price_gram_18k'] ?? null,
+            'price_gram_16k'   => $data['price_gram_16k'] ?? null,
+            'price_gram_14k'   => $data['price_gram_14k'] ?? null,
+            'price_gram_10k'   => $data['price_gram_10k'] ?? null,
+            'fetched_at'       => Carbon::now()->format('Y-m-d H:i:00'),
+          ]);
+          $goldRates[] = $newRate;
         }
-
-        $goldRates[] = $goldRate->fresh();
       } catch (\Exception $e) {
         $errors[$currency] = "Exception: " . $e->getMessage();
+
+        // Fallback DB
+        $existing = GoldRate::where('currency', $currency)->latest('fetched_at')->first();
+        if ($existing) {
+          $goldRates[] = $existing;
+        } else {
+          $errors[$currency] .= " | No previous record found in DB.";
+        }
       }
     }
 
+    // ✅ If nothing updated but we have fallback data
     if (empty($goldRates)) {
       return response()->json([
         'status' => 'error',
-        'message' => 'No gold rates updated.',
+        'message' => 'No gold rates available — API and fallback both failed.',
         'errors' => $errors
       ], 500);
     }
 
     return response()->json([
       'status' => 'success',
-      'message' => 'Gold rates updated successfully!',
+      'message' => 'Gold rates updated successfully (or loaded from previous data).',
       'data' => $goldRates,
       'errors' => $errors
     ], 200);

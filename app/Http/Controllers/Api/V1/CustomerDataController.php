@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class CustomerDataController extends Controller
 {
@@ -104,6 +105,67 @@ class CustomerDataController extends Controller
         }
     }
 
+    public function updateProfile(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or missing token',
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found',
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'fname'       => 'required|string|max:100',
+                'lname'       => 'required|string|max:100',
+                'email'       => 'required|email|max:255|unique:customers,email,' . $customer->id,
+                'phone'       => 'nullable|string|max:20',
+                'address'     => 'nullable|string|max:500',
+                'profile_pic' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                ], 422);
+            }
+
+            $customer->fill($request->only(['fname', 'lname', 'email', 'phone', 'address']));
+
+            if ($request->hasFile('profile_pic')) {
+                if ($customer->profile_pic && Storage::disk('public')->exists($customer->profile_pic)) {
+                    Storage::disk('public')->delete($customer->profile_pic);
+                }
+
+                $path = $request->file('profile_pic')->store('profiles', 'public');
+                $customer->profile_pic = $path;
+            }
+
+            $customer->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'data'    => $customer,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function getFranchises(Request $request)
     {
         try {
@@ -126,6 +188,7 @@ class CustomerDataController extends Controller
     public function createOrder(Request $request)
     {
         try {
+
             try {
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
@@ -154,41 +217,23 @@ class CustomerDataController extends Controller
             }
 
             $validate = Validator::make($request->all(), [
-                'purity' => 'required|in:18k,20k,22k,24k',
-                'before_melting_weight' => 'required|numeric|min:0.01',
+                'purity' => 'required|in:18k,20k,21k,22k,24k',
+                'before_melting_weight' => 'required|numeric|min:1.00',
+                'unit_price' => 'required|numeric|min:10',
+                'total_price' => 'required|numeric|min:10',
                 'before_image' => 'nullable|array|max:4',
                 'before_image.*' => 'image|mimes:jpeg,png,jpg|max:3072',
             ]);
 
             if ($validate->fails()) {
                 return response()->json([
-                    'success' => false,
+                    'status' => 'error',
                     'message' => $validate->errors()->first(),
                 ], 400);
             }
 
-            $input = $request->all();
-            $purity = (int) $input['purity'];
-            $weight = $input['before_melting_weight'];
-
-            $goldApi = [
-                "price_gram_24k" => 11526.8432,
-                "price_gram_22k" => 10566.2729,
-                "price_gram_20k" => 9605.7027,
-                "price_gram_18k" => 8645.1324,
-            ];
-
-            $purityMap = [
-                24 => 'price_gram_24k',
-                22 => 'price_gram_22k',
-                20 => 'price_gram_20k',
-                18 => 'price_gram_18k',
-            ];
-
-            $unitPrice = $goldApi[$purityMap[$purity]] ?? 0;
-            $totalPrice = $unitPrice * $weight;
-
             DB::beginTransaction();
+
             try {
                 $lastOrderGlobal = Order::latest('id')->first();
                 $nextSequence = $lastOrderGlobal ? $lastOrderGlobal->id + 1 : 1;
@@ -201,32 +246,34 @@ class CustomerDataController extends Controller
                 $order = new Order();
                 $order->customer_id = $customer->id;
                 $order->franchise_id = Franchise::where('code', $customer->ref_by)->value('id') ?? null;
-                $order->purity = $purity;
-                $order->before_melting_weight = $weight;
-                $order->unite_price = $unitPrice;
-                $order->total_price = $totalPrice;
+                $order->purity = $request->purity;
+                $order->before_melting_weight = $request->before_melting_weight;
+                $order->unite_price = $request->unit_price;
+                $order->total_price = $request->total_price;
                 $order->status = 'Created';
                 $order->order_no = $order_no;
                 $order->invoice = $invoice;
 
                 $beforeImages = [];
                 if ($request->hasFile('before_image')) {
-                    foreach ($request->file('before_image') as $file) {
-                        if (count($beforeImages) < 4) {
-                            $beforeImages[] = $file->store('orders/before', 'public');
-                        }
+                    $files = is_array($request->file('before_image'))
+                        ? $request->file('before_image')
+                        : [$request->file('before_image')];
+
+                    foreach ($files as $file) {
+                        $beforeImages[] = $file->store('orders/before', 'public');
                     }
                 }
-                $order->before_image = json_encode($beforeImages);
 
+                $order->before_image = json_encode($beforeImages);
                 $order->save();
+
                 DB::commit();
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
             }
-
-            // Email Notifications (Admin, Franchise, Customer)
+            // ✅ Send Email Notifications
             $mainSettings = Setting::first();
             $user = $customer;
 
@@ -267,11 +314,27 @@ class CustomerDataController extends Controller
                 });
             }
 
+
+            $beforeImageUrls = collect(json_decode($order->before_image, true) ?? [])
+                ->map(fn($path) => asset('storage/' . $path))
+                ->toArray();
+
             return response()->json([
-                'success' => true,
+                'status' => 'success',
                 'message' => 'Order created successfully!',
-                'data' => $order
-            ]);
+                'data' => [
+                    'id' => $order->id,
+                    'order_no' => $order->order_no,
+                    'invoice' => $order->invoice,
+                    'purity' => $order->purity,
+                    'before_melting_weight' => $order->before_melting_weight,
+                    'unite_price' => $order->unite_price,
+                    'total_price' => $order->total_price,
+                    'status' => $order->status,
+                    'before_image' => $beforeImageUrls,
+                    'created_at' => $order->created_at,
+                ]
+            ], 201);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -419,60 +482,6 @@ class CustomerDataController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Something went wrong: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function updateProfile(Request $request)
-    {
-        try {
-            try {
-                $customer = JWTAuth::parseToken()->authenticate();
-            } catch (JWTException $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or missing token'
-                ], 401);
-            }
-
-            if (!$customer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Customer not found'
-                ], 404);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'fname' => 'required|string|max:100',
-                'lname' => 'required|string|max:100',
-                'email' => 'required|email|max:255|unique:customers,email,' . $customer->id,
-                'phone' => 'nullable|string|max:20',
-                'address' => 'nullable|string|max:500',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $validator->errors()->first()
-                ], 400);
-            }
-
-            $customer->fname   = $request->fname;
-            $customer->lname   = $request->lname;
-            $customer->email   = $request->email;
-            $customer->phone   = $request->phone;
-            $customer->address = $request->address;
-            $customer->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Profile updated successfully',
-                'data'    => $customer
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
             ], 500);
         }
     }

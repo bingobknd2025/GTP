@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 
 class FranchiseDataController extends Controller
 {
@@ -165,6 +166,70 @@ class FranchiseDataController extends Controller
             return response()->json([
                 'status'  => 'error',
                 'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateProfile(Request $request)
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'name'       => 'nullable|string|max:100',
+                'address'       => 'nullable|string|max:100',
+                'email'       => 'nullable|email|max:255|unique:customers,email,' . $franchise->id,
+                'contact_no'       => 'nullable|string|max:20',
+                'contact_person_name'       => 'nullable|string|max:100',
+                'contact_person_number'       => 'nullable|string|max:20',
+                'store_lat'       => 'nullable|string|max:50',
+                'store_long'       => 'nullable|string|max:50',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                ], 422);
+            }
+
+            $franchise->fill($request->only(['name', 'address', 'email', 'contact_no', 'contact_person_name', 'contact_person_number', 'store_lat', 'store_long']));
+
+            if ($request->hasFile('image')) {
+                if ($franchise->image && Storage::disk('public')->exists($franchise->image)) {
+                    Storage::disk('public')->delete($franchise->image);
+                }
+
+                $path = $request->file('image')->store('profiles', 'public');
+                $franchise->image = $path;
+            }
+
+            $franchise->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'data'    => $franchise,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
     }
