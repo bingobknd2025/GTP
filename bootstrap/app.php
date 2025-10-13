@@ -6,6 +6,11 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
 use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
+<<<<<<< HEAD
+=======
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Request;
+>>>>>>> master
 
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -18,14 +23,31 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'auth' => \App\Http\Middleware\Authenticate::class,
+<<<<<<< HEAD
             'permission' => PermissionMiddleware::class,
             'role' => RoleMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
             'jwt.customer' => \App\Http\Middleware\JwtCustomerAuth::class,
+=======
+            'permission' => PermissionMiddleware::class, // ✅ Correct
+            'role' => RoleMiddleware::class,
+            'role_or_permission' => RoleOrPermissionMiddleware::class,
+            'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
+>>>>>>> master
         ]);
     })
 
     ->withExceptions(function (Exceptions $exceptions) {
+<<<<<<< HEAD
         //
+=======
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                ], 401);
+            }
+        });
+>>>>>>> master
     })->create();

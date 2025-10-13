@@ -646,6 +646,7 @@
         <aside class="app-sidebar sticky" id="sidebar">
 
             <div class="main-sidebar-header">
+<<<<<<< HEAD
                 <a href="index.html" class="header-logo h2">
                     <!--
                     <img src="{{asset('admin/images/brand-logos/desktop-logo.png')}}" alt="logo" class="desktop-logo">
@@ -655,13 +656,23 @@
                     <img src="{{asset('admin/images/brand-logos/desktop-white.png')}}" alt="logo" class="desktop-white">
                     <img src="{{asset('admin/images/brand-logos/toggle-white.png')}}" alt="logo" class="toggle-white"> -->
                     GTP ADMIN
+=======
+                <a href="index.html" class="header-logo">
+                    GTP
+>>>>>>> master
                 </a>
             </div>
             <div class="main-sidebar" id="sidebar-scroll">
 
                 <nav class="main-menu-container nav nav-pills flex-column sub-open">
                     <div class="slide-left" id="slide-left">
+<<<<<<< HEAD
                         GTP ADMIN
+=======
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24">
+                            <path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z"></path>
+                        </svg>
+>>>>>>> master
                     </div>
                     <ul class="main-menu">
 
@@ -702,6 +713,10 @@
                                 <span class="side-menu__label">KYC Management</span>
                             </a>
                         </li>
+<<<<<<< HEAD
+=======
+                        {{-- Debugging line for KYC List permission --}}
+>>>>>>> master
                         @endcan
                         @can('Deposit List')
                         <li class="slide">
@@ -719,6 +734,55 @@
                             </a>
                         </li>
                         @endcan
+<<<<<<< HEAD
+=======
+                        @can('Order List')
+                        <li class="slide">
+                            <a href="{{route('admin.orders.index')}}" class="side-menu__item">
+                                <i class="ri-file-user-line side-menu__icon"></i>
+                                <span class="side-menu__label">Order Management</span>
+                            </a>
+                        </li>
+                        @endcan
+                        @can('Transaction List')
+                        <li class="slide">
+                            <a href="{{route('admin.transactions.index')}}" class="side-menu__item">
+                                <i class="ri-file-user-line side-menu__icon"></i>
+                                <span class="side-menu__label">Transaction Management</span>
+                            </a>
+                        </li>
+                        @endcan
+
+                        @can('Activity')
+                        <li class="slide has-sub">
+                            <a href="javascript:void(0);" class="side-menu__item">
+                                <i class="ri-settings-3-line side-menu__icon"></i>
+                                <span class="side-menu__label">Activity Management</span>
+                                <i class="fe fe-chevron-right side-menu__angle"></i>
+                            </a>
+                            <ul class="slide-menu child1">
+                                <li class="slide side-menu__label1">
+                                    <a href="javascript:void(0)">Activity Management</a>
+                                </li>
+                                @can('Admin Activity')
+                                <li class="slide">
+                                    <a href="{{ route('admin.activity.index') }}" class="side-menu__item">Admin Activity</a>
+                                </li>
+                                @endcan
+                                @can('Customer Activity')
+                                <li class="slide">
+                                    <a href="{{ route('admin.customer_activity.index') }}" class="side-menu__item"> Customer Activity</a>
+                                </li>
+                                @endcan
+                                @can('Franchise Activity')
+                                <li class="slide">
+                                    <a href="{{ route('admin.franchise_activity.index') }}" class="side-menu__item"> Franchise Activity</a>
+                                </li>
+                                @endcan
+                            </ul>
+                        </li>
+                        @endcan
+>>>>>>> master
 
                         @can('Settings')
                         <li class="slide has-sub">
@@ -741,6 +805,14 @@
                                     <a href="{{route('admin.settings.preference')}}" class="side-menu__item"> Preference Settings</a>
                                 </li>
                                 @endcan
+<<<<<<< HEAD
+=======
+                                @can('Enquiry Settings')
+                                <li class="slide">
+                                    <a href="{{route('admin.enquiries.index')}}" class="side-menu__item"> Enquiry Settings</a>
+                                </li>
+                                @endcan
+>>>>>>> master
                             </ul>
                         </li>
                         @endcan
@@ -748,12 +820,20 @@
                         <li class="slide has-sub">
                             <a href="javascript:void(0);" class="side-menu__item">
                                 <i class="ri-settings-3-line side-menu__icon"></i>
+<<<<<<< HEAD
                                 <span class="side-menu__label">Administrator Setting</span>
+=======
+                                <span class="side-menu__label">Administrator Panel</span>
+>>>>>>> master
                                 <i class="fe fe-chevron-right side-menu__angle"></i>
                             </a>
                             <ul class="slide-menu child1">
                                 <li class="slide side-menu__label1">
+<<<<<<< HEAD
                                     <a href="javascript:void(0)">Administrator Setting</a>
+=======
+                                    <a href="javascript:void(0)">Setting Panel</a>
+>>>>>>> master
                                 </li>
                                 @can('User List')
                                 <li class="slide">
@@ -767,6 +847,14 @@
                                     <a href="{{route('roles.index')}}" class="side-menu__item"> Role Managment</a>
                                 </li>
                                 @endcan
+<<<<<<< HEAD
+=======
+                                @can('Permission List')
+                                <li class="slide">
+                                    <a href="{{route('admin.permissions.index')}}" class="side-menu__item"> Permission Managment</a>
+                                </li>
+                                @endcan
+>>>>>>> master
 
                                 <li class="slide">
                                     <a href="{{route('admin.change-password.index')}}" class="side-menu__item"> Change Password</a>

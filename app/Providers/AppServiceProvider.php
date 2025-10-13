@@ -2,11 +2,18 @@
 
 namespace App\Providers;
 
+<<<<<<< HEAD
 use Spatie\Permission\Middlewares\RoleMiddleware;
 use Spatie\Permission\Middlewares\PermissionMiddleware;
 use Spatie\Permission\Middlewares\RoleOrPermissionMiddleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+=======
+use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Spatie\Permission\Middlewares\RoleMiddleware;
+use Spatie\Permission\Middlewares\PermissionMiddleware;
+use Spatie\Permission\Middlewares\RoleOrPermissionMiddleware;
+>>>>>>> master
 
 class RouteServiceProvider extends ServiceProvider
 {
@@ -14,6 +21,7 @@ class RouteServiceProvider extends ServiceProvider
     {
         parent::boot();
 
+<<<<<<< HEAD
         app('router')->aliasMiddleware('role', \Spatie\Permission\Middlewares\RoleMiddleware::class);
         app('router')->aliasMiddleware('permission', \Spatie\Permission\Middlewares\PermissionMiddleware::class);
         app('router')->aliasMiddleware('role_or_permission', \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class);
@@ -35,5 +43,10 @@ class RouteServiceProvider extends ServiceProvider
         // } catch (\Exception $e) {
         //     return;
         // }
+=======
+        app('router')->aliasMiddleware('role', RoleMiddleware::class);
+        app('router')->aliasMiddleware('permission', PermissionMiddleware::class);
+        app('router')->aliasMiddleware('role_or_permission', RoleOrPermissionMiddleware::class);
+>>>>>>> master
     }
 }

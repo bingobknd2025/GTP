@@ -18,11 +18,17 @@
          </div>
          <div class="page-title fw-semibold fs-18 mb-0">
             <div>
+<<<<<<< HEAD
                 @can('KYC Add')
                <a href="{{route('admin.kycs.create')}}" class="btn bg-warning-transparent text-warning btn-sm" data-bs-toggle="tooltip" title="" data-bs-placement="bottom" data-bs-original-title="Add New">
                <span>
                <i class="fa fa-plus"></i>
                </span>
+=======
+               @can('KYC Add')
+               <a href="{{route('admin.kycs.create')}}" class="btn bg-warning-transparent text-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Add New">
+                  <span><i class="fa fa-plus"></i></span>
+>>>>>>> master
                </a>
                @endcan
             </div>
@@ -36,12 +42,26 @@
                      <table id="responsiveDataTable" class="table table-bordered text-nowrap w-100">
                         <thead>
                            <tr>
+<<<<<<< HEAD
                               <th><span>KYC ID</span></th>
                               <th><span>Customer Name</span></th>
                               <th><span>Document Type</span></th>
                               <th><span>Email</span></th>
                               <th><span>Phone Number</span></th>
                               <th><span>Status</span></th>
+=======
+                              <th>KYC ID</th>
+                              <th>Customer Name</th>
+                              <th>Email</th>
+                              <th>Phone Number</th>
+                              <th>Identity Type</th>
+                              <th>Identity Number</th>
+                              <th>Identity Status</th>
+                              <th>Mobile Status</th>
+                              <th>Residential Address</th>
+                              <th>Address Proof</th>
+                              <th>Final Status</th>
+>>>>>>> master
                               <th>Action</th>
                            </tr>
                         </thead>
@@ -60,6 +80,7 @@
 
 <script>
    $.ajaxSetup({
+<<<<<<< HEAD
     headers: {
         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     }
@@ -174,3 +195,154 @@ $(document).ready(function() {
 </script>
 
 @endsection
+=======
+      headers: {
+         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+      }
+   });
+
+   $(document).ready(function() {
+      var table = $('#responsiveDataTable').DataTable({
+         processing: true,
+         serverSide: true,
+         responsive: true,
+         ajax: "{{ route('admin.kycs.index') }}",
+         columns: [{
+               data: 'id',
+               name: 'id'
+            },
+            {
+               data: 'customer_name',
+               name: 'customer_name',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'email',
+               name: 'email'
+            },
+            {
+               data: 'phone_number',
+               name: 'phone_number'
+            },
+            {
+               data: 'identity_type',
+               name: 'identity_type'
+            },
+            {
+               data: 'identity_number',
+               name: 'identity_number'
+            },
+            {
+               data: 'identity_status',
+               name: 'identity_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'mobile_status',
+               name: 'mobile_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'resi_address_status',
+               name: 'resi_address_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'address_veri_status',
+               name: 'address_veri_status',
+               orderable: false,
+               searchable: false
+            },
+            {
+               data: 'final_status',
+               name: 'final_status',
+               orderable: false,
+               searchable: false,
+               render: function(data, type, row) {
+                  // handle ENUM('true', 'false') values as strings
+                  let isApproved = (data === 'true');
+                  let statusText = isApproved ? 'Approved' : 'Pending';
+                  let statusClass = isApproved ? 'btn-success' : 'btn-warning';
+
+                  return `
+                     <div class="dropdown">
+                        <button class="btn btn-sm ${statusClass} dropdown-toggle" type="button" id="dropdownFinalStatus${row.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                           ${statusText}
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownFinalStatus${row.id}">
+                           <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="true">Approved</a></li>
+                           <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="false">Pending</a></li>
+                        </ul>
+                     </div>
+                  `;
+               }
+            },
+            {
+               data: 'action',
+               name: 'action',
+               orderable: false,
+               searchable: false
+            }
+         ]
+
+      });
+
+      // Handle delete action via AJAX
+      $('#responsiveDataTable').on('submit', '.delete-kyc-form', function(e) {
+         e.preventDefault();
+         let form = $(this);
+         let url = form.attr('action');
+
+         if (confirm('Are you sure to delete this KYC entry?')) {
+            $.ajax({
+               url: url,
+               type: 'POST',
+               data: form.serialize(),
+               success: function(response) {
+                  toastr.success(response.message || 'KYC entry deleted successfully!');
+                  table.ajax.reload(null, false);
+               },
+               error: function(xhr) {
+                  toastr.error(xhr.responseJSON.message || 'An error occurred. Please try again.');
+               }
+            });
+         }
+      });
+
+      $(document).on('click', '.final-status-toggle', function(e) {
+         e.preventDefault();
+
+         let id = $(this).data('id');
+         let status = $(this).data('status'); // true or false (string)
+
+         $.ajax({
+            url: "{{ route('admin.kycs.finalStatus') }}",
+            type: 'POST',
+            data: {
+               _token: $('meta[name="csrf-token"]').attr('content'),
+               id: id,
+               status: status
+            },
+            success: function(response) {
+               if (response.success) {
+                  toastr.success('Final status updated successfully!');
+                  $('#kycTable').DataTable().ajax.reload(null, false);
+               } else {
+                  toastr.error('Something went wrong.');
+               }
+            },
+            error: function() {
+               toastr.error('Server error. Please try again.');
+            }
+         });
+      });
+
+   });
+</script>
+
+@endsection
+>>>>>>> master

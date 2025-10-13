@@ -123,4 +123,9 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+<<<<<<< HEAD
+=======
+    'x-api-key' => env('X_API_KEY', 'your-default-api-key-here'),
+
+>>>>>>> master
 ];

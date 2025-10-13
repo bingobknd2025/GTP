@@ -2,7 +2,11 @@
 
 namespace App\Models;
 
+<<<<<<< HEAD
 use Illuminate\Foundation\Auth\User as Authenticatable; // 👈 Change to Authenticatable
+=======
+use Illuminate\Foundation\Auth\User as Authenticatable;
+>>>>>>> master
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
@@ -23,16 +27,29 @@ class Customer extends Authenticatable implements JWTSubject
         'account_type',
         'account_number',
         'account_bank',
+<<<<<<< HEAD
         'status',
         'customer_otp',
+=======
+        'ref_by',
+        'status',
+>>>>>>> master
         'email_verfied',
         'mobile_verfied',
     ];
 
+<<<<<<< HEAD
     protected $hidden = ['password'];
 
     protected $casts = [
         'status' => 'boolean',
+=======
+    protected $hidden = [
+        'password',
+    ];
+
+    protected $casts = [
+>>>>>>> master
         'email_verfied' => 'boolean',
         'mobile_verfied' => 'boolean',
     ];
@@ -42,7 +59,11 @@ class Customer extends Authenticatable implements JWTSubject
         return $this->belongsTo(Franchise::class);
     }
 
+<<<<<<< HEAD
     // JWT methods
+=======
+    // ✅ JWT Required Methods
+>>>>>>> master
     public function getJWTIdentifier()
     {
         return $this->getKey();
@@ -50,6 +71,10 @@ class Customer extends Authenticatable implements JWTSubject
 
     public function getJWTCustomClaims()
     {
+<<<<<<< HEAD
         return [];
+=======
+        return ['role' => 'customer'];
+>>>>>>> master
     }
 }

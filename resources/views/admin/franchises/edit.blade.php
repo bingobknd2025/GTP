@@ -7,6 +7,7 @@
         <div class="row">
             <div class="col-xl-12">
                 <div class="card custom-card">
+<<<<<<< HEAD
                      <div class="card-header justify-content-between d-flex align-items-center">
                          <div class="card-title">Edit Franchise</div>
                          <a href="{{ route('admin.franchises.index') }}" class="btn btn-sm btn-secondary">Back to Franchises</a>
@@ -14,6 +15,15 @@
 
                     <div class="card-body">
                             <form id="franchiseForm" enctype="multipart/form-data">
+=======
+                    <div class="card-header justify-content-between d-flex align-items-center">
+                        <div class="card-title">Edit Franchise</div>
+                        <a href="{{ route('admin.franchises.index') }}" class="btn btn-sm btn-secondary">Back to Franchises</a>
+                    </div>
+
+                    <div class="card-body">
+                        <form id="franchiseForm" enctype="multipart/form-data">
+>>>>>>> master
                             @csrf
                             @method('PUT')
                             <div class="row gy-4">
@@ -40,7 +50,11 @@
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="email" class="form-label">Email:</label>
+<<<<<<< HEAD
                                     <input type="email" class="form-control" id="email" name="email" value="{{ $franchise->email }}" >
+=======
+                                    <input type="email" class="form-control" id="email" name="email" value="{{ $franchise->email }}">
+>>>>>>> master
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
@@ -70,20 +84,36 @@
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="status" class="form-label">Status:</label>
+<<<<<<< HEAD
                                     <select class="form-control" id="status" name="status">
                                         <option value="1" {{ $franchise->status == 1 ? 'selected' : '' }}>Active</option>
                                         <option value="0" {{ $franchise->status == 0 ? 'selected' : '' }}>Inactive</option>
+=======
+                                    <select class="form-control" id="status" name="status" required>
+                                        <option value="Pending" {{ old('status', $franchise->status ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
+                                        <option value="Approved" {{ old('status', $franchise->status ?? '') == 'Approved' ? 'selected' : '' }}>Approved</option>
+                                        <option value="Reject" {{ old('status', $franchise->status ?? '') == 'Reject' ? 'selected' : '' }}>Reject</option>
+>>>>>>> master
                                     </select>
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="image" class="form-label">Franchise Image:</label>
+<<<<<<< HEAD
                                    
                                     <input type="file" class="form-control" id="image" name="image" accept="image/*">
                                     @if($franchise->image)
                                         <div class="mb-2">
                                             <img src="{{ asset($franchise->image) }}" alt="Franchise Image" width="100">
                                         </div>
+=======
+
+                                    <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                    @if($franchise->image)
+                                    <div class="mb-2">
+                                        <img src="{{ asset($franchise->image) }}" alt="Franchise Image" width="100">
+                                    </div>
+>>>>>>> master
                                     @endif
                                 </div>
 
@@ -110,6 +140,7 @@
     const franchisesIndexUrl = "{{ route('admin.franchises.index') }}";
 </script>
 <script>
+<<<<<<< HEAD
 $(document).ready(function() {
 
     $('#franchiseForm').on('submit', function(e) {
@@ -148,3 +179,43 @@ $(document).ready(function() {
 </script>
 
 @endsection
+=======
+    $(document).ready(function() {
+
+        $('#franchiseForm').on('submit', function(e) {
+            e.preventDefault();
+            $('.text-danger').remove();
+
+            let formData = new FormData(this);
+            formData.append('_method', 'PUT'); // Add this for PUT request
+
+            $.ajax({
+                url: "{{ route('admin.franchises.update', $franchise->id) }}",
+                method: "POST", // Use POST because FormData and PUT don't mix well directly
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    alert(response.message || 'Franchise updated successfully!');
+                    window.location.href = franchisesIndexUrl;
+                },
+                error: function(xhr) {
+                    if (xhr.status === 422) {
+                        let errors = xhr.responseJSON.errors;
+                        $.each(errors, function(key, messages) {
+                            let input = $('[name="' + key + '"]');
+                            if (input.length) {
+                                input.closest('.col-xl-4, .col-lg-6, .col-md-6, .col-sm-12').append('<span class="text-danger validation-error-message">' + messages[0] + '</span>');
+                            }
+                        });
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+@endsection
+>>>>>>> master

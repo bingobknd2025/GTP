@@ -84,9 +84,27 @@
                                     <strong>Status:</strong>
                                     <div class="mt-1">
                                         @if($franchise->status)
+<<<<<<< HEAD
                                             <span class="badge bg-success">Active</span>
                                         @else
                                             <span class="badge bg-danger">Inactive</span>
+=======
+                                        <span class="badge bg-success">Active</span>
+                                        @else
+                                        <span class="badge bg-danger">Inactive</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <strong>verified:</strong>
+                                    <div class="mt-1">
+                                        @if($franchise->is_verified == 'true')
+                                        <span class="badge bg-success">Yes</span>
+                                        @else
+                                        <span class="badge bg-danger">No</span>
+>>>>>>> master
                                         @endif
                                     </div>
                                 </div>
@@ -96,9 +114,15 @@
                                     <strong>Image:</strong>
                                     <div class="mt-1">
                                         @if($franchise->image)
+<<<<<<< HEAD
                                             <img src="{{ asset($franchise->image) }}" alt="Franchise Image" width="150">
                                         @else
                                             N/A
+=======
+                                        <img src="{{ asset($franchise->image) }}" alt="Franchise Image" width="150">
+                                        @else
+                                        N/A
+>>>>>>> master
                                         @endif
                                     </div>
                                 </div>
@@ -135,4 +159,8 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 @endsection
+=======
+@endsection
+>>>>>>> master

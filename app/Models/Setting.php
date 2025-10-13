@@ -14,6 +14,10 @@ class Setting extends Model
         'website_name',
         'website_email',
         'website_contact',
+<<<<<<< HEAD
+=======
+        'website_currency',
+>>>>>>> master
         'fav_icon',
         'logo',
         'website_under_maintenance',

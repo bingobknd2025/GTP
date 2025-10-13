@@ -40,6 +40,7 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+<<<<<<< HEAD
         'franchise' => [
             'driver' => 'session',
             'provider' => 'franchises',
@@ -51,10 +52,23 @@ return [
         //     'hash' => false,
         // ],
 
+=======
+>>>>>>> master
         'customer' => [
             'driver' => 'jwt',
             'provider' => 'customers',
         ],
+<<<<<<< HEAD
+=======
+        'franchise' => [
+            'driver' => 'jwt',
+            'provider' => 'franchises',
+        ],
+        // 'franchise' => [
+        //     'driver' => 'session',
+        //     'provider' => 'franchise',
+        // ],
+>>>>>>> master
     ],
 
     /*
@@ -79,6 +93,7 @@ return [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
+<<<<<<< HEAD
         'franchises' => [
             'driver' => 'eloquent',
             'model' => App\Models\Franchise::class,
@@ -90,11 +105,29 @@ return [
         // ],
 
         // ✅ Customer provider
+=======
+>>>>>>> master
         'customers' => [
             'driver' => 'eloquent',
             'model' => App\Models\Customer::class,
         ],
+<<<<<<< HEAD
 
+=======
+        'franchises' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Franchise::class,
+        ],
+        // 'franchises' => [
+        //     'driver' => 'eloquent',
+        //     'model' => App\Models\Franchise::class,
+        // ],
+
+        // 'users' => [
+        //     'driver' => 'database',
+        //     'table' => 'users',
+        // ],
+>>>>>>> master
     ],
 
     /*
@@ -123,12 +156,15 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+<<<<<<< HEAD
         'customers' => [
             'provider' => 'customers',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
             'throttle' => 60,
         ],
+=======
+>>>>>>> master
     ],
 
     /*

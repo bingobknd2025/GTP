@@ -1,5 +1,9 @@
 <?php
 
+<<<<<<< HEAD
+=======
+use App\Http\Controllers\Admin\ActivityController;
+>>>>>>> master
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -11,8 +15,17 @@ use App\Models\User;
 use App\Http\Controllers\Front\FranchiseAuthController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DepositController;
+<<<<<<< HEAD
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\SettingsController;
+=======
+use App\Http\Controllers\Admin\EnquiryController;
+use App\Http\Controllers\Admin\KycController;
+use App\Http\Controllers\Admin\OrderController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\TransactionController;
+>>>>>>> master
 use App\Http\Controllers\Admin\WithdrawController;
 
 // Login
@@ -111,6 +124,10 @@ Route::middleware('auth')->group(function () {
         Route::delete('destroy/{id}', [DepositController::class, 'destroy'])->name('destroy')->middleware(['permission:Deposit Delete']);
     });
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
     // Withdraw Routes
     Route::prefix('admin/withdraws')->name('admin.withdraws.')->group(function () {
         Route::get('/', [WithdrawController::class, 'index'])->name('index')->middleware(['permission:Withdraw List']);
@@ -122,9 +139,59 @@ Route::middleware('auth')->group(function () {
         Route::delete('destroy/{id}', [WithdrawController::class, 'destroy'])->name('destroy')->middleware(['permission:Withdraw Delete']);
     });
 
+<<<<<<< HEAD
     Route::get('/user/import-excel/view', [UserController::class, 'import_excel_view'])->name('admin.users.import_excel_view')->middleware(['permission:User Excel Import View']);
     Route::post('/user/import-excel', [UserController::class, 'import_excel'])->name('admin.users.import_excel')->middleware(['permission:User Excel Import']);
 
+=======
+    // Order Routes
+    Route::prefix('admin/orders')->name('admin.orders.')->group(function () {
+        Route::get('/', [OrderController::class, 'index'])->name('index')->middleware(['permission:Order List']);
+        Route::get('create', [OrderController::class, 'create'])->name('create')->middleware(['permission:Order Add']);
+        Route::post('store', [OrderController::class, 'store'])->name('store')->middleware(['permission:Order Add']);
+        Route::get('edit/{id}', [OrderController::class, 'edit'])->name('edit')->middleware(['permission:Order Edit']);
+        Route::put('update/{id}', [OrderController::class, 'update'])->name('update')->middleware(['permission:Order Edit']);
+        Route::get('show/{id}', [OrderController::class, 'show'])->name('show')->middleware(['permission:Order View']);
+        Route::delete('destroy/{id}', [OrderController::class, 'destroy'])->name('destroy')->middleware(['permission:Order Delete']);
+    });
+
+    // Transaction Routes
+    Route::prefix('admin/transactions')->name('admin.transactions.')->group(function () {
+        Route::get('/', [TransactionController::class, 'index'])->name('index')->middleware(['permission:Transaction List']);
+        Route::get('create', [TransactionController::class, 'create'])->name('create')->middleware(['permission:Deposit Add']);
+        Route::post('store', [TransactionController::class, 'store'])->name('store')->middleware(['permission:Deposit Add']);
+        Route::get('edit/{id}', [TransactionController::class, 'edit'])->name('edit')->middleware(['permission:Deposit Edit']);
+        Route::put('update/{id}', [TransactionController::class, 'update'])->name('update')->middleware(['permission:Deposit Edit']);
+        Route::get('show/{id}', [TransactionController::class, 'show'])->name('show')->middleware(['permission:Deposit View']);
+        Route::delete('destroy/{id}', [TransactionController::class, 'destroy'])->name('destroy')->middleware(['permission:Deposit Delete']);
+    });
+
+
+    Route::get('/user/import-excel/view', [UserController::class, 'import_excel_view'])->name('admin.users.import_excel_view')->middleware(['permission:User Excel Import View']);
+    Route::post('/user/import-excel', [UserController::class, 'import_excel'])->name('admin.users.import_excel')->middleware(['permission:User Excel Import']);
+
+    // Admin Activity Routes
+    Route::prefix('admin/activity')->name('admin.activity.')->group(function () {
+        Route::get('/', [ActivityController::class, 'index'])->name('index')->middleware(['permission:Admin Activity']);
+        Route::get('show/{id}', [ActivityController::class, 'show'])->name('show')->middleware(['permission:Admin Activity']);
+        Route::delete('destroy/{id}', [ActivityController::class, 'destroy'])->name('destroy')->middleware(['permission:Admin Activity']);
+    });
+
+    // Customer Activity Routes
+    Route::prefix('admin/customer-activity')->name('admin.customer_activity.')->group(function () {
+        Route::get('/', [ActivityController::class, 'indexCustomer'])->name('index')->middleware(['permission:Customer Activity']);
+        Route::get('show/{id}', [ActivityController::class, 'showCustomer'])->name('show')->middleware(['permission:Customer Activity']);
+        Route::delete('destroy/{id}', [ActivityController::class, 'destroyCustomer'])->name('destroy')->middleware(['permission:Customer Activity']);
+    });
+
+    // Franchise Activity Routes
+    Route::prefix('admin/franchise-activity')->name('admin.franchise_activity.')->group(function () {
+        Route::get('/', [ActivityController::class, 'indexFranchise'])->name('index')->middleware(['permission:Franchise Activity']);
+        Route::get('show/{id}', [ActivityController::class, 'showFranchise'])->name('show')->middleware(['permission:Franchise Activity']);
+        Route::delete('destroy/{id}', [ActivityController::class, 'destroyFranchise'])->name('destroy')->middleware(['permission:Franchise Activity']);
+    });
+
+>>>>>>> master
     // Setting Routes
     Route::prefix('admin/settings')->name('admin.settings.')->group(function () {
         Route::get('main-settings', [SettingsController::class, 'mainSettings'])->name('main');
@@ -139,6 +206,17 @@ Route::middleware('auth')->group(function () {
         Route::post('payment-gateway', [SettingsController::class, 'paymentGatewaySettingsUpdate'])->name('payment_gateway.update');
     });
 
+<<<<<<< HEAD
+=======
+    // Enquiry Settings Routes
+    Route::prefix('admin/enquiries')->name('admin.enquiries.')->group(function () {
+        Route::get('/', [EnquiryController::class, 'index'])->name('index');
+        Route::get('show/{id}', [EnquiryController::class, 'show'])->name('show');
+        Route::delete('destroy/{id}', [EnquiryController::class, 'destroy'])->name('destroy');
+    });
+
+
+>>>>>>> master
     Route::get('/admin/users/{id}/pincode', [UserController::class, 'pincode_index'])->name('users.pincode_index');
     Route::post('/users/pincode/store', [UserController::class, 'pincode_store'])->name('users.pincode_store');
     Route::post('/users/pincode/update/{id}', [UserController::class, 'pincode_update'])->name('users.pincode_update');
@@ -154,4 +232,17 @@ Route::middleware('auth')->group(function () {
     Route::any('/role/update/{id}', [RoleController::class, 'update'])->name('roles.update');
     Route::get('/role/show/{id}', [RoleController::class, 'show'])->name('roles.show')->middleware(['permission:Role View']);
     Route::get('/role/destroy/{id}', [RoleController::class, 'destroy'])->name('roles.destroy')->middleware(['permission:role-delete']);
+<<<<<<< HEAD
+=======
+
+    Route::prefix('admin/permissions')->name('admin.permissions.')->group(function () {
+        Route::get('/', [PermissionController::class, 'index'])->name('index')->middleware(['permission:Permission List']);
+        Route::get('create', [PermissionController::class, 'create'])->name('create')->middleware(['permission:Permission Add']);
+        Route::post('store', [PermissionController::class, 'store'])->name('store')->middleware(['permission:Permission Add']);
+        Route::get('edit/{id}', [PermissionController::class, 'edit'])->name('edit')->middleware(['permission:Permission Edit']);
+        Route::put('update/{id}', [PermissionController::class, 'update'])->name('update')->middleware(['permission:Permission Edit']);
+        Route::get('show/{id}', [WithdrawController::class, 'show'])->name('show')->middleware(['permission:Permission View']);
+        Route::delete('destroy/{id}', [PermissionController::class, 'destroy'])->name('destroy')->middleware(['permission:Permission Delete']);
+    });
+>>>>>>> master
 });

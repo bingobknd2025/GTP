@@ -7,10 +7,17 @@
         <div class="row">
             <div class="col-xl-12">
                 <div class="card custom-card">
+<<<<<<< HEAD
                      <div class="card-header justify-content-between d-flex align-items-center">
                          <div class="card-title">Add Franchise</div>
                          <a href="{{ route('admin.franchises.index') }}" class="btn btn-sm btn-secondary">Back to Franchises</a>
                      </div>
+=======
+                    <div class="card-header justify-content-between d-flex align-items-center">
+                        <div class="card-title">Add Franchise</div>
+                        <a href="{{ route('admin.franchises.index') }}" class="btn btn-sm btn-secondary">Back to Franchises</a>
+                    </div>
+>>>>>>> master
 
                     <div class="card-body">
                         <form id="franchiseForm" enctype="multipart/form-data">
@@ -39,12 +46,20 @@
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="email" class="form-label">Email:</label>
+<<<<<<< HEAD
                                     <input type="email" class="form-control" id="email" name="email" >
+=======
+                                    <input type="email" class="form-control" id="email" name="email">
+>>>>>>> master
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="password" class="form-label">Password:</label>
+<<<<<<< HEAD
                                     <input type="password" class="form-control" id="password" name="password" >
+=======
+                                    <input type="password" class="form-control" id="password" name="password">
+>>>>>>> master
                                 </div>
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
@@ -69,9 +84,16 @@
 
                                 <div class="col-xl-4 col-lg-6 col-md-6 col-sm-12">
                                     <label for="status" class="form-label">Status:</label>
+<<<<<<< HEAD
                                     <select class="form-control" id="status" name="status">
                                         <option value="1" selected>Active</option>
                                         <option value="0">Inactive</option>
+=======
+                                    <select class="form-control" id="status" name="status" required>
+                                        <option value="Pending" {{ old('status', $franchise->status ?? '') == 'Pending' ? 'selected' : '' }}>Pending</option>
+                                        <option value="Approved" {{ old('status', $franchise->status ?? '') == 'Approved' ? 'selected' : '' }}>Approved</option>
+                                        <option value="Reject" {{ old('status', $franchise->status ?? '') == 'Reject' ? 'selected' : '' }}>Reject</option>
+>>>>>>> master
                                     </select>
                                 </div>
 
@@ -103,6 +125,7 @@
     const franchisesIndexUrl = "{{ route('admin.franchises.index') }}";
 </script>
 <script>
+<<<<<<< HEAD
 $(document).ready(function() {
 
     $('#franchiseForm').on('submit', function(e) {
@@ -141,3 +164,43 @@ $(document).ready(function() {
 </script>
 
 @endsection
+=======
+    $(document).ready(function() {
+
+        $('#franchiseForm').on('submit', function(e) {
+            e.preventDefault();
+            $('.text-danger').remove();
+
+            let formData = new FormData(this);
+
+            $.ajax({
+                url: "{{ route('admin.franchises.store') }}",
+                method: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    alert(response.message || 'Franchise added successfully!');
+                    $('#franchiseForm')[0].reset();
+                    window.location.href = franchisesIndexUrl;
+                },
+                error: function(xhr) {
+                    if (xhr.status === 422) {
+                        let errors = xhr.responseJSON.errors;
+                        $.each(errors, function(key, messages) {
+                            let input = $('[name="' + key + '"]');
+                            if (input.length) {
+                                input.closest('.col-xl-4, .col-lg-6, .col-md-6, .col-sm-12').append('<span class="text-danger validation-error-message">' + messages[0] + '</span>');
+                            }
+                        });
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
+                }
+            });
+        });
+    });
+</script>
+
+@endsection
+>>>>>>> master

@@ -6,13 +6,28 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Hamcrest\Core\Set;
 use Illuminate\Http\Request;
+<<<<<<< HEAD
+=======
+use App\Models\UserActivity;
+use Illuminate\Support\Facades\Auth;
+use App\Helpers\CustomeHelper;
+>>>>>>> master
 
 class SettingsController extends Controller
 {
     public function mainSettings()
     {
         $mainSettings = Setting::where('id', 1)->first();
+<<<<<<< HEAD
         // dd($mainSettings);
+=======
+        CustomeHelper::logAdminActivity(
+            Auth::id(),
+            'View Main Settings Page',
+            ['page' => 'Main Settings']
+        );
+
+>>>>>>> master
         return view('admin.settings.main-settings', compact('mainSettings'));
     }
 
@@ -30,6 +45,10 @@ class SettingsController extends Controller
             'website_name',
             'website_email',
             'website_contact',
+<<<<<<< HEAD
+=======
+            'website_currency',
+>>>>>>> master
         ]);
 
         // Enum checkboxes

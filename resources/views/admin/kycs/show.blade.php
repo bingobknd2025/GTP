@@ -67,6 +67,25 @@
                                         <th>Country:</th>
                                         <td>{{ $kyc->country }}</td>
                                     </tr>
+<<<<<<< HEAD
+=======
+
+                                    <tr>
+                                        <th>Address Proof Type:</th>
+                                        <td>{{ $kyc->address_proof_type }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Address Proof File:</th>
+                                        <td>
+                                            @if($kyc->address_proof_file)
+                                            <a href="{{ asset('storage/' . $kyc->address_proof_file) }}" target="_blank" class="btn btn-sm btn-info">View File</a>
+                                            @else
+                                            N/A
+                                            @endif
+                                        </td>
+                                    </tr>
+
+>>>>>>> master
                                     <tr>
                                         <th>Document Type:</th>
                                         <td>{{ $kyc->document_type }}</td>
@@ -79,6 +98,7 @@
                                         <th>Source:</th>
                                         <td>{{ $kyc->source }}</td>
                                     </tr>
+<<<<<<< HEAD
                                     <tr>
                                         <th>Status:</th>
                                         <td>
@@ -88,16 +108,71 @@
                                                 <span class="badge bg-success">Approved</span>
                                             @else
                                                 <span class="badge bg-danger">Rejected</span>
+=======
+
+                                    <tr>
+                                        <th>Identity Type:</th>
+                                        <td>{{ $kyc->identity_type }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Identity Number:</th>
+                                        <td>{{ $kyc->identity_number }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Identity File:</th>
+                                        <td>
+                                            @if($kyc->identity_file)
+                                            <a href="{{ asset('storage/' . $kyc->identity_file) }}" target="_blank" class="btn btn-sm btn-info">View File</a>
+                                            @else
+                                            N/A
+>>>>>>> master
                                             @endif
                                         </td>
                                     </tr>
                                     <tr>
+<<<<<<< HEAD
                                         <th>Front Image:</th>
                                         <td>
                                             @if($kyc->frontimg)
                                                 <img src="{{ asset('storage/' . $kyc->frontimg) }}" width="100px" class="mt-2"/>
                                             @else
                                                 N/A
+=======
+                                        <th>Identity Status:</th>
+                                        <td>
+                                            @if($kyc->identity_status == 'pending')
+                                            <span class="badge bg-warning">Pending</span>
+                                            @elseif($kyc->identity_status == 'approved')
+                                            <span class="badge bg-success">Approved</span>
+                                            @elseif($kyc->identity_status == 'rejected')
+                                            <span class="badge bg-danger">Rejected</span>
+                                            @else
+                                            <span class="badge bg-secondary">N/A</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <th>Status:</th>
+                                        <td>
+                                            @if($kyc->status == 'pending')
+                                            <span class="badge bg-warning">Pending</span>
+                                            @elseif($kyc->status == 'approved')
+                                            <span class="badge bg-success">Approved</span>
+                                            @else
+                                            <span class="badge bg-danger">Rejected</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <th>Front Image:</th>
+                                        <td>
+                                            @if($kyc->frontimg)
+                                            <img src="{{ asset('storage/' . $kyc->frontimg) }}" width="100px" class="mt-2" />
+                                            @else
+                                            N/A
+>>>>>>> master
                                             @endif
                                         </td>
                                     </tr>
@@ -105,12 +180,22 @@
                                         <th>Back Image:</th>
                                         <td>
                                             @if($kyc->backimg)
+<<<<<<< HEAD
                                                 <img src="{{ asset('storage/' . $kyc->backimg) }}" width="100px" class="mt-2"/>
                                             @else
                                                 N/A
                                             @endif
                                         </td>
                                     </tr>
+=======
+                                            <img src="{{ asset('storage/' . $kyc->backimg) }}" width="100px" class="mt-2" />
+                                            @else
+                                            N/A
+                                            @endif
+                                        </td>
+                                    </tr>
+
+>>>>>>> master
                                     <tr>
                                         <th>Created At:</th>
                                         <td>{{ $kyc->created_at }}</td>
@@ -129,4 +214,8 @@
     </div>
 </div>
 
+<<<<<<< HEAD
 @endsection
+=======
+@endsection
+>>>>>>> master

@@ -21,6 +21,7 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
+<<<<<<< HEAD
             $data = Customer::orderBy('id', 'DESC')->get();
 
             return DataTables::of($data)
@@ -51,17 +52,86 @@ class CustomerController extends Controller
         }
 
         return view('admin.customers.index');
+=======
+            $query = Customer::with('franchise')->orderBy('id', 'DESC');
+
+            // Apply Franchise filter
+            if ($request->franchise_id) {
+                $query->where('franchise_id', $request->franchise_id);
+            }
+
+            // Apply Status filter
+            if ($request->status) {
+                $query->where('status', $request->status);
+            }
+
+            // Apply KYC Status filter
+            if ($request->kyc_status) {
+                $query->where('kyc_status', $request->kyc_status);
+            }
+
+            $data = $query->get();
+
+            return DataTables::of($data)
+                ->addIndexColumn()
+                ->addColumn('franchise_name', fn($row) => $row->franchise ? $row->franchise->name : 'N/A')
+                ->addColumn('customer_name', fn($row) => $row->fname . ' ' . $row->lname)
+                ->editColumn('kyc_status', function ($row) {
+                    $statusClass = match ($row->kyc_status) {
+                        'Verified' => 'btn-success',
+                        'Not Verified' => 'btn-warning',
+                        'Rejected' => 'btn-danger',
+                        default => 'btn-secondary',
+                    };
+                    return '<span class="btn btn-sm ' . $statusClass . '">' . $row->kyc_status . '</span>';
+                })
+                ->editColumn('status', function ($row) {
+                    $statusClass = match ($row->status) {
+                        'Approved' => 'btn-success',
+                        'Pending' => 'btn-warning',
+                        'Reject' => 'btn-danger',
+                        default => 'btn-secondary',
+                    };
+                    return '<span class="btn btn-sm ' . $statusClass . '">' . $row->status . '</span>';
+                })
+                ->addColumn('action', function ($row) {
+                    $btn = '';
+                    if (auth()->user()->can('Customer Edit')) {
+                        $btn .= '<a href="' . route('admin.customers.edit', $row->id) . '" class="btn btn-sm btn-primary me-1"><i class="fas fa-edit"></i></a>';
+                    }
+                    if (auth()->user()->can('Customer Delete')) {
+                        $btn .= '<form action="' . route('admin.customers.destroy', $row->id) . '" method="POST" style="display:inline;">'
+                            . csrf_field() . method_field('DELETE') .
+                            '<button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt"></i></button></form>';
+                    }
+                    if (auth()->user()->can('Customer View')) {
+                        $btn .= '<a href="' . route('admin.customers.show', $row->id) . '" class="btn btn-sm btn-info me-1"><i class="fas fa-eye"></i></a>';
+                    }
+                    return $btn;
+                })
+                ->rawColumns(['franchise_name', 'customer_name', 'kyc_status', 'status', 'action'])
+                ->make(true);
+        }
+
+        $franchises = Franchise::all();
+        return view('admin.customers.index', compact('franchises'));
+>>>>>>> master
     }
 
     public function create(): View
     {
+<<<<<<< HEAD
         $franchises = Franchise::all();
+=======
+        $franchises = Franchise::where('status', 'Active')->get();
+>>>>>>> master
         return view('admin.customers.create', compact('franchises'));
     }
 
     public function store(Request $request): JsonResponse
     {
         $request->validate([
+<<<<<<< HEAD
             'franchise_id' => 'nullable|exists:franchises,id',
             'fname' => 'nullable',
             'lname' => 'nullable',
@@ -75,10 +145,25 @@ class CustomerController extends Controller
             'account_bank' => 'nullable',
             'status' => 'boolean',
             'email_verfied' => 'boolean',
+=======
+            'franchise_id'   => 'nullable|exists:franchises,id',
+            'fname'          => 'nullable|string|max:100',
+            'lname'          => 'nullable|string|max:100',
+            'email'          => 'nullable|email|unique:customers,email',
+            'mobile_no'      => 'nullable|unique:customers,mobile_no',
+            'password'       => 'nullable|min:6',
+            'account_balance' => 'nullable|numeric',
+            'account_name'   => 'nullable|string|max:255',
+            'account_type'   => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:255',
+            'account_bank'   => 'nullable|string|max:255',
+            'email_verfied'  => 'boolean',
+>>>>>>> master
             'mobile_verfied' => 'boolean',
         ]);
 
         $input = $request->all();
+<<<<<<< HEAD
         $input['password'] = Hash::make($input['password']);
 
         Customer::create($input);
@@ -86,6 +171,28 @@ class CustomerController extends Controller
         return response()->json(['success' => true, 'message' => 'Customer created successfully!']);
     }
 
+=======
+
+        if (!empty($input['password'])) {
+            $input['password'] = Hash::make($input['password']);
+        }
+
+        $franchise = Franchise::find($input['franchise_id'] ?? null);
+        $input['account_verify'] = 1;
+        $input['kyc_status']     = 'Not Verified';
+        $input['status']         = 'Pending';
+        $input['ref_by']        = $franchise ? $franchise->code : null;
+
+        Customer::create($input);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Customer created successfully!'
+        ]);
+    }
+
+
+>>>>>>> master
     public function show($id): View
     {
         $customer = Customer::with('franchise')->findOrFail($id);
@@ -132,10 +239,18 @@ class CustomerController extends Controller
         return response()->json(['success' => true, 'message' => 'Customer updated successfully!']);
     }
 
+<<<<<<< HEAD
     public function destroy($id): JsonResponse
     {
         Customer::findOrFail($id)->delete();
 
         return response()->json(['success' => true, 'message' => 'Customer deleted successfully!']);
+=======
+    public function destroy($id)
+    {
+        Customer::findOrFail($id)->delete();
+
+        return redirect()->route('admin.customers.index')->with('success', 'Customer deleted successfully.');
+>>>>>>> master
     }
 }
