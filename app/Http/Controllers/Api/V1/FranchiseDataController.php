@@ -590,6 +590,147 @@ class FranchiseDataController extends Controller
         ]);
     }
 
+    // public function updateOrder(Request $request)
+    // {
+    //     $validator = Validator::make($request->all(), [
+    //         'order_id'               => 'required|integer|exists:orders,id',
+    //         'purity'                 => 'nullable|string|max:100',
+    //         'after_melting_weight'   => 'required|numeric|min:0',
+    //         'unite_price'            => 'nullable|numeric|min:0',
+    //         'total_price'            => 'required|numeric|min:0',
+    //         'amount_paid'            => 'nullable|numeric|min:0',
+    //         'status'                 => 'required|in:Created,Gold_Recieved,Payment_Done,Order_Cancelled,In_Process',
+    //         'order_note'             => 'required|string',
+    //         'after_image'            => 'required|array',
+    //         'after_image.*'          => 'image|mimes:jpeg,png,jpg|max:3072',
+    //     ]);
+
+    //     if ($validator->fails()) {
+    //         return response()->json([
+    //             'status'  => 'error',
+    //             'message' => 'Validation Error',
+    //             'errors'  => $validator->errors(),
+    //         ], 422);
+    //     }
+
+    //     try {
+    //         // ✅ Authenticate Franchise
+    //         try {
+    //             $franchise = JWTAuth::parseToken()->authenticate();
+    //         } catch (JWTException $e) {
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'Invalid or missing token',
+    //             ], 401);
+    //         }
+
+    //         if (!$franchise) {
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'Franchise not found',
+    //             ], 404);
+    //         }
+
+    //         $order = Order::find($request->order_id);
+
+    //         if (!$order) {
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'Order not found',
+    //             ], 404);
+    //         }
+
+    //         if ($order->franchise_id !== $franchise->id) {
+    //             return response()->json([
+    //                 'status'  => 'error',
+    //                 'message' => 'You do not have permission to update this order',
+    //             ], 403);
+    //         }
+
+    //         // ✅ Update fields
+    //         $order->fill($request->only([
+    //             'purity',
+    //             'after_melting_weight',
+    //             'unite_price',
+    //             'total_price',
+    //             'amount_paid',
+    //             'status',
+    //             'order_note',
+    //         ]));
+
+    //         // ✅ Handle after images upload
+    //         if ($request->hasFile('after_image')) {
+    //             $afterImages = json_decode($order->after_image, true) ?? [];
+
+    //             foreach ($request->file('after_image') as $file) {
+    //                 $afterImages[] = $file->store('orders/after', 'public');
+    //             }
+
+    //             $order->after_image = json_encode($afterImages);
+    //         }
+
+    //         $order->save();
+
+    //         // ✅ Get settings and users
+    //         $mainSettings = Setting::first();
+    //         $user = Customer::find($order->customer_id);
+
+    //         // ✅ Common email data
+    //         $afterImages = json_decode($order->after_image, true) ?? [];
+
+    //         // ✅ Send mail to Admin
+    //         if ($mainSettings && $mainSettings->mail_from_email) {
+    //             Mail::send('emails.order_notification', [
+    //                 'order'       => $order,
+    //                 'settings'    => $mainSettings,
+    //                 'for'         => 'admin',
+    //                 'afterImages' => $afterImages,
+    //             ], function ($message) use ($mainSettings) {
+    //                 $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+    //                     ->subject('Order Updated');
+    //             });
+    //         }
+
+    //         // ✅ Send mail to User
+    //         if ($user && $user->email) {
+    //             Mail::send('emails.order_notification', [
+    //                 'order'       => $order,
+    //                 'user'        => $user,
+    //                 'for'         => 'user',
+    //                 'afterImages' => $afterImages,
+    //             ], function ($message) use ($user) {
+    //                 $message->to($user->email, $user->fname ?? '')
+    //                     ->subject('Your Order Has Been Updated');
+    //             });
+    //         }
+
+    //         // ✅ Send mail to Franchise
+    //         if ($franchise && $franchise->email) {
+    //             Mail::send('emails.order_notification', [
+    //                 'order'       => $order,
+    //                 'franchise'   => $franchise,
+    //                 'for'         => 'franchise',
+    //                 'afterImages' => $afterImages,
+    //             ], function ($message) use ($franchise) {
+    //                 $message->to($franchise->email, $franchise->name ?? '')
+    //                     ->subject('Order Updated under Your Franchise');
+    //             });
+    //         }
+
+    //         return response()->json([
+    //             'status'            => 'success',
+    //             'message'           => 'Order updated successfully',
+    //             'website_currency'  => $mainSettings->website_currency ?? 'INR',
+    //             'data'              => $order,
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'status'  => 'error',
+    //             'message' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
+
     public function updateOrder(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -597,11 +738,11 @@ class FranchiseDataController extends Controller
             'purity'                 => 'nullable|string|max:100',
             'after_melting_weight'   => 'required|numeric|min:0',
             'unite_price'            => 'nullable|numeric|min:0',
-            'total_price'            => 'required|numeric|min:0',
+            'total_price_after_melt' => 'required|numeric|min:0',
             'amount_paid'            => 'nullable|numeric|min:0',
-            'status'                 => 'required|in:Created,Gold_Recieved,Payment_Done,Order_Cancelled,In_Process',
+            'status'                 => 'required|in:Created,Gold_Recieved,Payment_Done,Order_Cancelled,In_Process,Send_to_customer_approval',
             'order_note'             => 'required|string',
-            'after_image'            => 'required|array',
+            'after_image'            => 'nullable|array',
             'after_image.*'          => 'image|mimes:jpeg,png,jpg|max:3072',
         ]);
 
@@ -652,13 +793,13 @@ class FranchiseDataController extends Controller
                 'purity',
                 'after_melting_weight',
                 'unite_price',
-                'total_price',
+                'total_price_after_melt',
                 'amount_paid',
                 'status',
                 'order_note',
             ]));
 
-            // ✅ Handle after images upload
+            // ✅ Handle after images
             if ($request->hasFile('after_image')) {
                 $afterImages = json_decode($order->after_image, true) ?? [];
 
@@ -671,14 +812,49 @@ class FranchiseDataController extends Controller
 
             $order->save();
 
-            // ✅ Get settings and users
+            // ✅ Get settings and related models
             $mainSettings = Setting::first();
             $user = Customer::find($order->customer_id);
-
-            // ✅ Common email data
             $afterImages = json_decode($order->after_image, true) ?? [];
 
-            // ✅ Send mail to Admin
+            // ✅ Custom email and response if status == Send_to_customer_approval
+            if ($request->status === 'Send_to_customer_approval') {
+
+                // Send a specific email to customer
+                if ($user && $user->email) {
+                    Mail::send('emails.order_send_to_approval', [
+                        'order'       => $order,
+                        'user'        => $user,
+                        'for'         => 'customer_approval',
+                        'afterImages' => $afterImages,
+                    ], function ($message) use ($user) {
+                        $message->to($user->email, $user->fname ?? '')
+                            ->subject('Your Order is Awaiting Your Approval');
+                    });
+                }
+
+                // Send email to admin
+                if ($mainSettings && $mainSettings->mail_from_email) {
+                    Mail::send('emails.order_send_to_approval', [
+                        'order'       => $order,
+                        'settings'    => $mainSettings,
+                        'for'         => 'admin_approval',
+                        'afterImages' => $afterImages,
+                    ], function ($message) use ($mainSettings) {
+                        $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                            ->subject('Order Sent to Customer for Approval');
+                    });
+                }
+
+                return response()->json([
+                    'status'           => 'success',
+                    'message'          => 'Order sent to customer for approval successfully',
+                    'website_currency' => $mainSettings->website_currency ?? 'INR',
+                    'data'             => $order,
+                ]);
+            }
+
+            // ✅ Default email flow for other statuses
             if ($mainSettings && $mainSettings->mail_from_email) {
                 Mail::send('emails.order_notification', [
                     'order'       => $order,
@@ -691,7 +867,6 @@ class FranchiseDataController extends Controller
                 });
             }
 
-            // ✅ Send mail to User
             if ($user && $user->email) {
                 Mail::send('emails.order_notification', [
                     'order'       => $order,
@@ -704,7 +879,6 @@ class FranchiseDataController extends Controller
                 });
             }
 
-            // ✅ Send mail to Franchise
             if ($franchise && $franchise->email) {
                 Mail::send('emails.order_notification', [
                     'order'       => $order,
@@ -718,10 +892,10 @@ class FranchiseDataController extends Controller
             }
 
             return response()->json([
-                'status'            => 'success',
-                'message'           => 'Order updated successfully',
-                'website_currency'  => $mainSettings->website_currency ?? 'INR',
-                'data'              => $order,
+                'status'           => 'success',
+                'message'          => 'Order updated successfully',
+                'website_currency' => $mainSettings->website_currency ?? 'INR',
+                'data'             => $order,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -730,6 +904,7 @@ class FranchiseDataController extends Controller
             ], 500);
         }
     }
+
 
 
     public function orderDetails(Request $request)

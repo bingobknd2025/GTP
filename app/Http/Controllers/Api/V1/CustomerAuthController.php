@@ -165,7 +165,7 @@ class CustomerAuthController extends Controller
         $customer->account_verify = 'approved';
         $customer->save();
 
-        // JWTAuth::invalidate(JWTAuth::getToken());
+        JWTAuth::invalidate(JWTAuth::getToken());
 
         return response()->json([
             'status'   => 'success',
