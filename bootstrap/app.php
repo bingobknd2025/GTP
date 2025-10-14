@@ -34,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'api.key' => \App\Http\Middleware\ApiKeyMiddleware::class,
+<<<<<<< HEAD
+>>>>>>> master
+=======
+            'account.verified' => \App\Http\Middleware\CheckCustomerAccountVerified::class,
 >>>>>>> master
         ]);
     })

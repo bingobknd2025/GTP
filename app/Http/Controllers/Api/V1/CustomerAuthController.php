@@ -162,9 +162,10 @@ class CustomerAuthController extends Controller
         $otpData->delete();
 
         $customer->email_verfied = 1;
+        $customer->account_verify = 'approved';
         $customer->save();
 
-        JWTAuth::invalidate(JWTAuth::getToken());
+        // JWTAuth::invalidate(JWTAuth::getToken());
 
         return response()->json([
             'status'   => 'success',
