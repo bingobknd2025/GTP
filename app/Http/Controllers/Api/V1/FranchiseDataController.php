@@ -406,6 +406,8 @@ class FranchiseDataController extends Controller
                     'status',
                     'total_price',
                     'amount_paid',
+                    'order_note',
+                    'approval_status',
                     'created_at'
                 ]);
 
@@ -423,6 +425,8 @@ class FranchiseDataController extends Controller
                     'status'        => $order->status,
                     'total_price'   => $order->total_price,
                     'amount_paid'   => $order->amount_paid,
+                    'order_note'    => $order->order_note,
+                    'approval_status' => $order->approval_status,
                     'created_at'    => $order->created_at,
                 ];
             });
@@ -447,7 +451,6 @@ class FranchiseDataController extends Controller
             ], 500);
         }
     }
-
 
     public function createOrder(Request $request)
     {
@@ -755,6 +758,109 @@ class FranchiseDataController extends Controller
                 'message'          => 'Order updated successfully',
                 'website_currency' => $mainSettings->website_currency ?? 'INR',
                 'data'             => $order,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function confirmApproval(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'order_id' => 'required|integer|exists:orders,id',
+            'order_note' => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation Error',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token',
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found',
+                ], 404);
+            }
+
+            $order = Order::find($request->order_id);
+
+            if (!$order) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Order not found',
+                ], 404);
+            }
+
+            if ($order->franchise_id !== $franchise->id) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'You do not have permission to confirm this order',
+                ], 403);
+            }
+
+            if ($order->approval_status !== 'Accepted') {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Customer has not yet approved this order',
+                ], 400);
+            }
+
+            $order->status = 'In_Process';
+            $order->order_note = $request->order_note ?? null;
+            $order->updated_at = now();
+            $order->save();
+
+            CustomeHelper::logFranchiseActivity($franchise->id, 'Confirmed Customer Approved Order');
+
+            $mainSettings = Setting::first();
+            $customer = Customer::find($order->customer_id);
+            $afterImages = json_decode($order->after_image, true) ?? [];
+
+            if ($mainSettings && $mainSettings->mail_from_email) {
+                Mail::send('emails.franchise_confirm_customer_approval', [
+                    'order'       => $order,
+                    'franchise'   => $franchise,
+                    'for'         => 'admin',
+                    'afterImages' => $afterImages,
+                ], function ($message) use ($mainSettings) {
+                    $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                        ->subject('Franchise Confirmed Customer Approved Order');
+                });
+            }
+
+            if ($customer && $customer->email) {
+                Mail::send('emails.franchise_confirm_customer_approval', [
+                    'order'       => $order,
+                    'customer'    => $customer,
+                    'for'         => 'customer',
+                    'afterImages' => $afterImages,
+                ], function ($message) use ($customer) {
+                    $message->to($customer->email, $customer->fname ?? '')
+                        ->subject('Your Order Has Been Confirmed by Franchise');
+                });
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Order confirmed successfully. Processing started.',
+                'data'    => $order,
             ]);
         } catch (\Exception $e) {
             return response()->json([

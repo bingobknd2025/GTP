@@ -105,6 +105,7 @@ Route::middleware('api.key')->group(function () {
                 Route::post('orders-all', [FranchiseDataController::class, 'listAllOrders']);
                 Route::post('order-create', [FranchiseDataController::class, 'createOrder']);
                 Route::post('order-update', [FranchiseDataController::class, 'updateOrder']);
+                Route::post('order-confirm', [FranchiseDataController::class, 'confirmApproval']);
                 Route::post('order-details', [FranchiseDataController::class, 'orderDetails']);
 
 

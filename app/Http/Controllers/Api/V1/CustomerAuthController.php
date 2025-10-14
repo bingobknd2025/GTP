@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
+use App\Helpers\CustomeHelper;
+use Exception;
 
 class CustomerAuthController extends Controller
 {
@@ -780,87 +782,147 @@ class CustomerAuthController extends Controller
         }
     }
 
-    // Firebase OTP Integration
     public function sendFirebaseOtp(Request $request)
     {
-        $request->validate([
-            'phone' => 'required|string'
+        $validator = Validator::make($request->all(), [
+            'phone_number' => 'required|string|max:15|unique:customers,mobile_no',
         ]);
 
-        // Check auth token
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
         try {
             $customer = JWTAuth::parseToken()->authenticate();
         } catch (JWTException $e) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Invalid or missing token'
+                'status' => 'error',
+                'message' => 'Invalid or missing token',
             ], 401);
         }
 
-        // Ensure phone is in E.164 format
-        $phone = $request->phone;
+        $phone = $request->phone_number;
         if (!preg_match('/^\+[1-9]\d{7,14}$/', $phone)) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Phone number must be in E.164 format. Example: +919355910745'
+                'status' => 'error',
+                'message' => 'Phone number must be in E.164 format (e.g. +919876543210)',
             ], 422);
         }
 
-        $url = "https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key=" . $this->apiKey;
+        $url = "https://identitytoolkit.googleapis.com/v1/accounts:sendVerificationCode?key={$this->apiKey}";
 
-        $response = Http::post($url, [
-            "phoneNumber"    => $phone,
-            "recaptchaToken" => "ignored-in-test-mode" // required but ignored in test numbers
-        ]);
+        $payload = [
+            'phoneNumber' => $phone,
+            'recaptchaToken' => 'ignored-in-test-mode',
+        ];
 
-        if ($response->failed()) {
-            $error = $response->json();
+        try {
+            $response = Http::post($url, $payload);
+
+            if ($response->failed()) {
+                $error = $response->json();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $error['error']['message'] ?? 'Firebase OTP send failed',
+                    'details' => $error,
+                ], 400);
+            }
+
             return response()->json([
-                'status'  => 'error',
-                'message' => $error['error']['message'] ?? 'Something went wrong',
-                'details' => $error['error']['errors'] ?? []
-            ], $error['error']['code'] ?? 400);
+                'status' => 'success',
+                'message' => 'OTP sent successfully',
+                'data' => $response->json(),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Exception occurred while sending OTP',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'status'  => 'success',
-            'message' => 'OTP sent successfully',
-            'data'    => $response->json()
-        ]);
     }
 
-    // Step 2: Verify OTP
     public function verifyFirebaseOtp(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'sessionInfo' => 'required|string',
-            'code' => 'required|string'
+            'code' => 'required|string',
         ]);
 
-        $url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key=" . $this->apiKey;
-
-        $response = Http::post($url, [
-            "sessionInfo" => $request->sessionInfo,
-            "code" => $request->code
-        ]);
-
-        if ($response->failed()) {
-            return response()->json($response->json(), 400);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $data = $response->json();
+        try {
+            $customer = JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid or missing token',
+            ], 401);
+        }
 
-        // Store verified phone in DB
-        $user = auth()->user();
-        $user->phone = $data['phoneNumber'] ?? null;
-        $user->phone_verified_at = now();
-        $user->save();
+        $url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPhoneNumber?key={$this->apiKey}";
 
-        return response()->json([
-            "status" => "success",
-            "message" => "Phone verified successfully",
-            "firebase" => $data
-        ]);
+        try {
+            $response = Http::post($url, [
+                'sessionInfo' => $request->sessionInfo,
+                'code' => $request->code,
+            ]);
+
+            if ($response->failed()) {
+                $error = $response->json();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $error['error']['message'] ?? 'OTP verification failed',
+                    'details' => $error,
+                ], 400);
+            }
+
+            $data = $response->json();
+            $phone = $data['phoneNumber'] ?? null;
+
+            if (!$phone) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Phone number not found in Firebase response',
+                    'details' => $data,
+                ], 400);
+            }
+
+            $kyc = Kyc::updateOrCreate(
+                ['customer_id' => $customer->id],
+                [
+                    'phone_number' => $phone,
+                    'mobile_verified_at' => now(),
+                    'mobile_status' => 'true',
+                ]
+            );
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Phone verified successfully',
+                'data' => [
+                    'phone_number' => $kyc->phone_number,
+                    'mobile_verified_at' => $kyc->mobile_verified_at,
+                    'mobile_status' => $kyc->mobile_status,
+                ],
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Exception during OTP verification',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function finalSubmit(Request $request)
