@@ -31,42 +31,45 @@ Route::middleware('api.key')->group(function () {
                 Route::post('verify-otp', [CustomerAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [CustomerAuthController::class, 'resendOtp']);
 
-                // Online KYC API
-                Route::post('kyc/status', [CustomerAuthController::class, 'kycstatus']);
-                Route::post('kyc/access-token', [CustomerAuthController::class, 'getAccessToken']);
-                Route::post('kyc/webhook', [CustomerAuthController::class, 'handleWebhook']);
+                Route::middleware('account.verified')->group(function () {
 
-                // Offline KYC APIs
-                Route::post('kyc/get-status', [CustomerAuthController::class, 'getKycStatus']);
-                Route::post('kyc/submit-identity', [CustomerAuthController::class, 'submitIdentity']);
-                Route::post('kyc/submit-residential', [CustomerAuthController::class, 'submitResidentialAddress']);
-                Route::post('kyc/submit-address', [CustomerAuthController::class, 'submitAddressProof']);
-                Route::post('kyc/submit-mobile', [CustomerAuthController::class, 'submitMobile']);
-                Route::post('kyc/send-firebase-otp', [CustomerAuthController::class, 'sendFirebaseOtp']);
-                Route::post('kyc/verify-firebase-otp', [CustomerAuthController::class, 'verifyFirebaseOtp']);
-                Route::post('kyc/submit-final', [CustomerAuthController::class, 'finalSubmit']);
+                    // Online KYC API
+                    Route::post('kyc/status', [CustomerAuthController::class, 'kycstatus']);
+                    Route::post('kyc/access-token', [CustomerAuthController::class, 'getAccessToken']);
+                    Route::post('kyc/webhook', [CustomerAuthController::class, 'handleWebhook']);
 
-                Route::post('dashboard', [CustomerDataController::class, 'dashboard']);
+                    // Offline KYC APIs
+                    Route::post('kyc/get-status', [CustomerAuthController::class, 'getKycStatus']);
+                    Route::post('kyc/submit-identity', [CustomerAuthController::class, 'submitIdentity']);
+                    Route::post('kyc/submit-residential', [CustomerAuthController::class, 'submitResidentialAddress']);
+                    Route::post('kyc/submit-address', [CustomerAuthController::class, 'submitAddressProof']);
+                    Route::post('kyc/submit-mobile', [CustomerAuthController::class, 'submitMobile']);
+                    Route::post('kyc/send-firebase-otp', [CustomerAuthController::class, 'sendFirebaseOtp']);
+                    Route::post('kyc/verify-firebase-otp', [CustomerAuthController::class, 'verifyFirebaseOtp']);
+                    Route::post('kyc/submit-final', [CustomerAuthController::class, 'finalSubmit']);
 
-                // Order APIs
-                Route::post('order-create', [CustomerDataController::class, 'createOrder']);
-                Route::post('orders-list', [CustomerDataController::class, 'listOrders']);
-                Route::post('order-details', [CustomerDataController::class, 'orderDetails']);
+                    Route::post('dashboard', [CustomerDataController::class, 'dashboard']);
 
-                // Profile APIs
-                Route::post('profile', [CustomerDataController::class, 'getProfile']);
-                Route::post('profile-update', [CustomerDataController::class, 'updateProfile']);
-                Route::post('change-password-otp', [CustomerAuthController::class, 'requestChangePasswordOtp']);
-                Route::post('change-password', [CustomerAuthController::class, 'changePassword']);
+                    // Order APIs
+                    Route::post('order-create', [CustomerDataController::class, 'createOrder']);
+                    Route::post('orders-list', [CustomerDataController::class, 'listOrders']);
+                    Route::post('order-details', [CustomerDataController::class, 'orderDetails']);
+
+                    // Profile APIs
+                    Route::post('profile', [CustomerDataController::class, 'getProfile']);
+                    Route::post('profile-update', [CustomerDataController::class, 'updateProfile']);
+                    Route::post('change-password-otp', [CustomerAuthController::class, 'requestChangePasswordOtp']);
+                    Route::post('change-password', [CustomerAuthController::class, 'changePassword']);
 
 
-                // Support Ticket APIs
-                Route::post('ticket-create', [CustomerDataController::class, 'createTicket']);
-                Route::post('tickets-list', [CustomerDataController::class, 'listTickets']);
-                // Route::post('ticket-details', [CustomerDataController::class, 'ticketDetails']);
+                    // Support Ticket APIs
+                    Route::post('ticket-create', [CustomerDataController::class, 'createTicket']);
+                    Route::post('tickets-list', [CustomerDataController::class, 'listTickets']);
+                    // Route::post('ticket-details', [CustomerDataController::class, 'ticketDetails']);
 
-                Route::post('logout', [CustomerAuthController::class, 'logout']);
-                Route::post('check-token', [CustomerAuthController::class, 'checkTokenExpiry']);
+                    Route::post('logout', [CustomerAuthController::class, 'logout']);
+                    Route::post('check-token', [CustomerAuthController::class, 'checkTokenExpiry']);
+                });
             });
         });
 
