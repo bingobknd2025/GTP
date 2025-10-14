@@ -52,6 +52,7 @@ Route::middleware('api.key')->group(function () {
 
                     // Order APIs
                     Route::post('order-create', [CustomerDataController::class, 'createOrder']);
+                    Route::post('order-approve', [CustomerDataController::class, 'updateOrderApproval']);
                     Route::post('orders-list', [CustomerDataController::class, 'listOrders']);
                     Route::post('order-details', [CustomerDataController::class, 'orderDetails']);
 

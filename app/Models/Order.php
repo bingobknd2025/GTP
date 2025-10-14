@@ -20,12 +20,15 @@ class Order extends Model
         'before_melting_weight',
         'after_melting_weight',
         'unite_price',
+        'total_price_after_melt',
         'total_price',
         'before_image',
         'after_image',
         'amount_paid',
         'invoice',
         'status',
+        'approval_status',
+        'customer_remarks',
         'order_note',
     ];
 
@@ -35,6 +38,7 @@ class Order extends Model
         'after_melting_weight' => 'float',
         'unite_price' => 'float',
         'total_price' => 'float',
+        'total_price_after_melt' => 'float',
         'amount_paid' => 'float',
     ];
 

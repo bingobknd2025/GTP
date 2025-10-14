@@ -343,6 +343,129 @@ class CustomerDataController extends Controller
         }
     }
 
+    public function updateOrderApproval(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'order_id'        => 'required|integer|exists:orders,id',
+            'approval_status' => 'required|in:Accepted,Rejected',
+            'customer_remarks'         => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Validation Error',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            // ✅ Authenticate customer
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token',
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Customer not found',
+                ], 404);
+            }
+
+            $order = Order::find($request->order_id);
+
+            if (!$order) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Order not found',
+                ], 404);
+            }
+
+            if ($order->customer_id !== $customer->id) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'You do not have permission to approve this order',
+                ], 403);
+            }
+
+            if ($order->status !== 'Send_to_customer_approval') {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Order is not awaiting your approval',
+                ], 400);
+            }
+
+            if ($request->approval_status === 'Accepted') {
+                $order->approval_status = 'Accepted';
+                $order->status = 'In_Process';
+            } else {
+                $order->approval_status = 'Rejected';
+                $order->status = 'In_Process';
+            }
+
+            $order->customer_remarks = $request->customer_remarks ?? null;
+            $order->updated_at = now();
+            $order->save();
+
+            CustomeHelper::logCustomerActivity($customer->id, 'Updated Order Approval', $order->id);
+
+            $mainSettings = Setting::first();
+            $franchise = Franchise::find($order->franchise_id);
+            $afterImages = json_decode($order->after_image, true) ?? [];
+
+            if ($mainSettings && $mainSettings->mail_from_email) {
+                Mail::send('emails.order_approval_result', [
+                    'order'       => $order,
+                    'customer'    => $customer,
+                    'for'         => 'admin',
+                    'afterImages' => $afterImages,
+                    'status'      => $request->approval_status,
+                ], function ($message) use ($mainSettings, $request) {
+                    $subject = $request->approval_status === 'Accepted'
+                        ? 'Order Approved by Customer'
+                        : 'Order Rejected by Customer';
+                    $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                        ->subject($subject);
+                });
+            }
+
+            if ($franchise && $franchise->email) {
+                Mail::send('emails.order_approval_result', [
+                    'order'       => $order,
+                    'customer'    => $customer,
+                    'for'         => 'franchise',
+                    'afterImages' => $afterImages,
+                    'status'      => $request->approval_status,
+                ], function ($message) use ($franchise, $request) {
+                    $subject = $request->approval_status === 'Accepted'
+                        ? 'Customer Approved the Order'
+                        : 'Customer Rejected the Order';
+                    $message->to($franchise->email, $franchise->name ?? '')
+                        ->subject($subject);
+                });
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => $request->approval_status === 'Accepted'
+                    ? 'Order approved successfully'
+                    : 'Order rejected successfully',
+                'data'    => $order,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
     public function listOrders(Request $request)
     {
         try {
