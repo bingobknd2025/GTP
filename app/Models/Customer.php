@@ -21,6 +21,7 @@ class Customer extends Authenticatable implements JWTSubject
         'account_balance',
         'account_name',
         'account_type',
+        'ifsc_code',
         'account_number',
         'account_bank',
         'ref_by',

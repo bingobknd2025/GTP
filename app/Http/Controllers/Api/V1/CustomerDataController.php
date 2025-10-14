@@ -166,6 +166,72 @@ class CustomerDataController extends Controller
         }
     }
 
+    public function updateBankDetails(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or missing token.',
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Customer not found.',
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'account_name'    => 'required|string|max:255',
+                'account_type'    => 'required|string|max:50',
+                'ifsc_code'       => 'required|string|max:20',
+                'account_number'  => 'required|string|max:20',
+                'account_bank'    => 'required|string|max:100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                ], 422);
+            }
+
+            $customer->update([
+                'account_bank'   => $request->account_bank,
+                'account_name'   => $request->account_name,
+                'account_number' => $request->account_number,
+                'ifsc_code'      => $request->ifsc_code,
+                'account_type'   => $request->account_type,
+            ]);
+
+            CustomeHelper::logCustomerActivity($customer->id, 'Updated Bank Details');
+
+            if (!empty($customer->email)) {
+                Mail::send('emails.bank-details-updated', [
+                    'customer' => $customer,
+                ], function ($message) use ($customer) {
+                    $message->to($customer->email, $customer->fname . ' ' . $customer->lname)
+                        ->subject('Your Bank Details Have Been Updated');
+                });
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Bank details updated successfully.',
+                'data'    => $customer,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function getFranchises(Request $request)
     {
         try {
@@ -464,7 +530,6 @@ class CustomerDataController extends Controller
             ], 500);
         }
     }
-
 
     public function listOrders(Request $request)
     {
