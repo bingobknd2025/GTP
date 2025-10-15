@@ -45,6 +45,7 @@
                               <th>Residential Address</th>
                               <th>Address Proof</th>
                               <th>Final Status</th>
+                              <th>KYC Type</th>
                               <th>Action</th>
                            </tr>
                         </thead>
@@ -130,23 +131,29 @@
                orderable: false,
                searchable: false,
                render: function(data, type, row) {
-                  // handle ENUM('true', 'false') values as strings
                   let isApproved = (data === 'true');
                   let statusText = isApproved ? 'Approved' : 'Pending';
                   let statusClass = isApproved ? 'btn-success' : 'btn-warning';
 
                   return `
-                     <div class="dropdown">
-                        <button class="btn btn-sm ${statusClass} dropdown-toggle" type="button" id="dropdownFinalStatus${row.id}" data-bs-toggle="dropdown" aria-expanded="false">
-                           ${statusText}
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="dropdownFinalStatus${row.id}">
-                           <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="true">Approved</a></li>
-                           <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="false">Pending</a></li>
-                        </ul>
-                     </div>
-                  `;
+                  <div class="dropdown">
+                     <button class="btn btn-sm ${statusClass} dropdown-toggle" type="button"
+                        id="dropdownFinalStatus${row.id}" data-bs-toggle="dropdown" aria-expanded="false">
+                        ${statusText}
+                     </button>
+                     <ul class="dropdown-menu" aria-labelledby="dropdownFinalStatus${row.id}">
+                        <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="true">Approved</a></li>
+                        <li><a class="dropdown-item final-status-toggle" href="#" data-id="${row.id}" data-status="false">Pending</a></li>
+                     </ul>
+                  </div>
+               `;
                }
+            },
+            {
+               data: 'kyc_type',
+               name: 'kyc_type',
+               orderable: false,
+               searchable: false
             },
             {
                data: 'action',
@@ -184,11 +191,21 @@
          e.preventDefault();
 
          let id = $(this).data('id');
-         let status = $(this).data('status'); // true or false (string)
+         let status = String($(this).data('status'));
+         let button = $(`#dropdownFinalStatus${id}`);
+
+         // Ask confirmation
+         if (!confirm(`Are you sure you want to mark this KYC as ${status === 'true' ? 'Approved' : 'Pending'}?`)) {
+            return; // User cancelled
+         }
+
+         let originalText = button.text();
+         button.prop('disabled', true).text('Updating...'); // Show updating text
 
          $.ajax({
             url: "{{ route('admin.kycs.finalStatus') }}",
             type: 'POST',
+            dataType: 'json',
             data: {
                _token: $('meta[name="csrf-token"]').attr('content'),
                id: id,
@@ -196,14 +213,18 @@
             },
             success: function(response) {
                if (response.success) {
-                  toastr.success('Final status updated successfully!');
-                  $('#kycTable').DataTable().ajax.reload(null, false);
+                  toastr.success(response.message || 'Final status updated!');
+                  $('#responsiveDataTable').DataTable().ajax.reload(null, false);
                } else {
-                  toastr.error('Something went wrong.');
+                  toastr.error(response.message || 'Something went wrong.');
                }
             },
-            error: function() {
-               toastr.error('Server error. Please try again.');
+            error: function(xhr) {
+               let msg = xhr.responseJSON?.message || 'Server error.';
+               toastr.error(msg);
+            },
+            complete: function() {
+               button.prop('disabled', false).text(originalText); // Restore original button text
             }
          });
       });

@@ -13,6 +13,7 @@ use DataTables;
 use Illuminate\Container\Attributes\Log;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -87,10 +88,15 @@ class KycController extends Controller
                 })
 
                 // Final Status
-                ->addColumn('final_status', function ($row) {
-                    $statusText  = $row->final_status === 'true' ? 'Completed' : 'Pending';
-                    $statusClass = $row->final_status === 'true' ? 'bg-success' : 'bg-warning';
-                    return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
+                ->editColumn('final_status', function ($row) {
+                    return $row->final_status === 'true' ? 'true' : 'false';
+                })
+
+                // KYC Type
+                ->addColumn('kyc_type', function ($row) {
+                    $typeText  = $row->kyc_type === 'online' ? 'Online' : 'Offline';
+                    $typeClass = $row->kyc_type === 'online' ? 'bg-primary' : 'bg-secondary';
+                    return '<span class="badge ' . $typeClass . '">' . $typeText . '</span>';
                 })
 
                 // Action buttons
@@ -114,6 +120,7 @@ class KycController extends Controller
                     'address_veri_status',
                     'resi_address_status',
                     'final_status',
+                    'kyc_type',
                     'action'
                 ])
                 ->make(true);
@@ -431,27 +438,90 @@ class KycController extends Controller
         ]);
 
         try {
+            DB::beginTransaction();
+
             $kyc = Kyc::findOrFail($request->id);
+            $finalStatus = $request->status === 'true' ? 'true' : 'false';
 
-            // Convert string 'true'/'false' to boolean
-            $newStatus = filter_var($request->status, FILTER_VALIDATE_BOOLEAN);
-
-            // Update final_status and admin_status logic
-            $kyc->final_status = $newStatus;
-            $kyc->admin_status = $newStatus; // if both must be same
-
+            $kyc->final_status = $finalStatus;
+            $kyc->admin_status = $finalStatus;
+            $kyc->franchise_status = $finalStatus;
             $kyc->save();
 
-            return redirect()->route('admin.kycs.index')
-                ->with('success', 'KYC final status updated successfully.');
+            $customer = Customer::find($kyc->customer_id);
+            if ($customer) {
+                if ($finalStatus === 'true') {
+                    $customer->kyc_status = 'Verified';
+                    $customer->status = 'Approved';
+                    $customerMessage = "Dear {$customer->fname},\n\nYour KYC has been approved successfully.\n\nThank you for completing your verification!";
+                } else {
+                    $customer->kyc_status = 'Not Verified';
+                    $customer->status = 'Pending';
+                    $customerMessage = "Dear {$customer->fname},\n\nYour KYC is currently pending. Please complete the required documents or contact support.\n\nThank you.";
+                }
+                $customer->save();
+
+                // Send email safely
+                if (!empty($customer->email)) {
+                    try {
+                        Mail::raw($customerMessage, function ($message) use ($customer, $finalStatus) {
+                            $subject = $finalStatus === 'true'
+                                ? 'KYC Approved Successfully'
+                                : 'KYC Pending';
+                            $message->to($customer->email, $customer->fname ?? '')
+                                ->subject($subject);
+                        });
+                    } catch (\Exception $mailException) {
+                        \Log::error("Customer mail failed: " . $mailException->getMessage());
+                    }
+                }
+            }
+
+            // Notify franchise safely
+            if ($customer && $customer->franchise_id) {
+                $franchise = Franchise::find($customer->franchise_id);
+                if ($franchise && !empty($franchise->email)) {
+                    $franchiseMessage = "KYC final status updated for one of your customers.\n\n"
+                        . "Customer: {$customer->fname} {$customer->lname}\n"
+                        . "Email: {$customer->email}\n"
+                        . "KYC ID: {$kyc->id}\n"
+                        . "Status: " . ($finalStatus === 'true' ? 'Approved' : 'Pending');
+                    try {
+                        Mail::raw($franchiseMessage, function ($message) use ($franchise) {
+                            $message->to($franchise->email, $franchise->name ?? '')
+                                ->subject('KYC Status Updated for Customer');
+                        });
+                    } catch (\Exception $mailException) {
+                        \Log::error("Franchise mail failed: " . $mailException->getMessage());
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'KYC final status updated successfully!'
+            ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false]);
+            DB::rollBack();
+            \Log::error('Error updating final_status: ' . $e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error. Please try again. ' . $e->getMessage()
+            ], 500);
         }
     }
 
     public function destroy($id): JsonResponse
     {
         $kyc = Kyc::findOrFail($id);
+        $customer = Customer::where('kyc_id', $kyc->id)->first();
+        if ($customer) {
+            $customer->kyc_id = 0;
+            $customer->kyc_status = 'Not Verified';
+            $customer->save();
+        }
         if ($kyc->frontimg) {
             Storage::disk('public')->delete($kyc->frontimg);
         }

@@ -102,6 +102,7 @@ Route::middleware('auth')->group(function () {
         Route::get('edit/{id}', [KycController::class, 'edit'])->name('edit')->middleware(['permission:KYC Edit']);
         Route::put('update/{id}', [KycController::class, 'update'])->name('update')->middleware(['permission:KYC Edit']);
         Route::get('show/{id}', [KycController::class, 'show'])->name('show')->middleware(['permission:KYC View']);
+        Route::post('final-status', [KycController::class, 'processedKyc'])->name('finalStatus');
         Route::delete('destroy/{id}', [KycController::class, 'destroy'])->name('destroy')->middleware(['permission:KYC Delete']);
     });
 
