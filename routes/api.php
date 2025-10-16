@@ -56,6 +56,11 @@ Route::middleware('api.key')->group(function () {
                     Route::post('orders-list', [CustomerDataController::class, 'listOrders']);
                     Route::post('order-details', [CustomerDataController::class, 'orderDetails']);
 
+                    // Payment APIs
+                    Route::post('payments-list', [CustomerDataController::class, 'listPayments']);
+                    Route::post('payment-details', [CustomerDataController::class, 'paymentDetail']);
+                    Route::post('generate-invoice', [CustomerDataController::class, 'generateInvoice']);
+
                     // Profile APIs
                     Route::post('profile', [CustomerDataController::class, 'getProfile']);
                     Route::post('profile-update', [CustomerDataController::class, 'updateProfile']);
@@ -108,6 +113,11 @@ Route::middleware('api.key')->group(function () {
                 Route::post('order-confirm', [FranchiseDataController::class, 'confirmApproval']);
                 Route::post('order-details', [FranchiseDataController::class, 'orderDetails']);
 
+                // Payment APIs
+                Route::post('payments-list', [FranchiseDataController::class, 'listPayments']);
+                Route::post('payment-details', [FranchiseDataController::class, 'paymentDetail']);
+                Route::post('update-payment-status', [FranchiseDataController::class, 'updatePaymentStatus']);
+                Route::post('generate-invoice', [FranchiseDataController::class, 'generateInvoice']);
 
                 Route::post('logout', [FranchiseAuthController::class, 'logout']);
                 Route::post('check-token', [FranchiseAuthController::class, 'checkTokenExpiry']);

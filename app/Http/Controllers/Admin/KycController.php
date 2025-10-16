@@ -499,6 +499,15 @@ class KycController extends Controller
 
             DB::commit();
 
+            // if ($finalStatus === 'true' && $customer) {
+            //     try {
+            //         $token = JWTAuth::fromUser($customer);
+            //         JWTAuth::invalidate($token);
+
+            //     } catch (\Exception $logoutException) {
+            //         \Log::warning("Failed to invalidate JWT for customer ID {$customer->id}: " . $logoutException->getMessage());
+            //     }
+            // }
             return response()->json([
                 'success' => true,
                 'message' => 'KYC final status updated successfully!'
