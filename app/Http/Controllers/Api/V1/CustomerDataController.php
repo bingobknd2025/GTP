@@ -1059,4 +1059,175 @@ class CustomerDataController extends Controller
             ], 500);
         }
     }
+
+      public function withdrawRequest(Request $request)
+    {
+        try {
+            $customer = JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid or missing token',
+            ], 401);
+        }
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:1',
+            'method_id' => 'required|integer|exists:wdmethods,id',
+            'bankname' => 'required|string|max:255',
+            'account_number' => 'required|string|max:255',
+            'ifsc_code' => 'required|string|max:255',
+            'source' => 'required|string|max:255|in:WEB,APP',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()->first(),
+            ], 400);
+        }
+
+        $method = Wdmethod::findOrFail($request->method_id);
+
+        $existingPending = Withdrawal::where('customer_id', $customer->id)
+            ->where('status', 'Pending')
+            ->exists();
+
+        if ($existingPending) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'You already have a pending withdrawal request. Please wait until it is processed.',
+            ], 403);
+        }
+
+        $charge = $method->charges_type === 'percentage'
+            ? ($request->amount * $method->charges_amount) / 100
+            : $method->charges_amount;
+
+        $to_deduct = $request->amount + $charge;
+
+        if ($request->amount < $method->minimum || $request->amount > $method->maximum) {
+            return response()->json([
+                'status' => 'error',
+                'message' => "Amount should be between ${$method->minimum} and ${$method->maximum}.",
+            ]);
+        }
+
+        $walletBalance = $customer->account_balance;
+
+        if ($walletBalance < $to_deduct) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Insufficient wallet balance to make this withdrawal.',
+            ], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            $lastWithdrawal = Withdrawal::latest('id')->first();
+            $nextSequence = $lastWithdrawal ? $lastWithdrawal->id + 1 : 1;
+            $datePart = now()->format('dMY');
+            $txnNumber = str_pad($nextSequence, 6, '0', STR_PAD_LEFT);
+            $txnId = 'WDR' . $datePart . $txnNumber;
+
+            // WITHDRAW20250005 for reference number
+            $refNo = 'WITHDRAW' . date('Y') . str_pad($nextSequence, 5, '0', STR_PAD_LEFT);
+
+            $withdrawal = Withdrawal::create([
+                'txn_id' => $txnId,
+                'customer_id' => $customer->id,
+                'amount' => $request->amount,
+                'charges' => $charge,
+                'to_deduct' => $to_deduct,
+                'status' => 'Pending',
+                'payment_mode' => $method->name,
+                'paydetails' => json_encode([
+                    'bank_name' => $request->bankname,
+                    'account_number' => $request->account_number,
+                    'ifsc_code' => $request->ifsc_code,
+                ]),
+                'reference_number' => $refNo,
+                'source' => $request->source,
+            ]);
+
+            $latestTxn = DB::table('wallet_transactions')->orderBy('id', 'desc')->first();
+            $nextNumber = 1;
+            if ($latestTxn && preg_match('/TXN\d{4}(\d{6})/', $latestTxn->txn_no, $matches)) {
+                $nextNumber = intval($matches[1]) + 1;
+            }
+            $txnNo = 'TXN' . date('Y') . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+
+            Wallet::create([
+                'txn_no' => $txnNo,
+                'reference_no' => $withdrawal->txn_id,
+                'order_id' => null,
+                'franchise_id' => Franchise::where('code', $customer->ref_by)->value('id'),
+                'customer_id' => $customer->id,
+                'amount' => $to_deduct,
+                'type' => 'Withdrawal',
+                'note' => 'Withdrawal request initiated via ' . $method->name,
+            ]);
+
+            $customer->account_balance -= $to_deduct;
+            $customer->save();
+
+            DB::commit();
+            CustomeHelper::logCustomerActivity($customer->id, 'Customer Created Withdrawal Request');
+            $mainSettings = DB::table('settings')->first();
+            $franchise = Franchise::where('code', $customer->ref_by)->first();
+
+            if ($mainSettings && $mainSettings->mail_from_email) {
+                Mail::send('emails.withdraw_request', [
+                    'withdrawal' => $withdrawal,
+                    'settings' => $mainSettings,
+                    'for' => 'admin',
+                ], function ($message) use ($mainSettings) {
+                    $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                        ->subject('New Withdrawal Request Submitted');
+                });
+            }
+
+            if (!empty($customer->email)) {
+                Mail::send('emails.withdraw_request', [
+                    'withdrawal' => $withdrawal,
+                    'user' => $customer,
+                    'for' => 'user',
+                ], function ($message) use ($customer) {
+                    $message->to($customer->email, $customer->fname ?? '')
+                        ->subject('Your Withdrawal Request Submitted');
+                });
+            }
+
+            if ($franchise && !empty($franchise->email)) {
+                Mail::send('emails.withdraw_request', [
+                    'withdrawal' => $withdrawal,
+                    'franchise' => $franchise,
+                    'for' => 'franchise',
+                ], function ($message) use ($franchise) {
+                    $message->to($franchise->email, $franchise->name ?? '')
+                        ->subject('New Withdrawal Request under Your Franchise');
+                });
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Withdrawal request submitted successfully!',
+                'data' => $withdrawal,
+            ]);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Something went wrong. ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

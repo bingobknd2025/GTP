@@ -12,7 +12,7 @@ class Withdrawal extends Model
     use HasFactory;
     protected $fillable = [
         'txn_id',
-        'user',
+        'customer_id',
         'amount',
         'charges',
         'columns',
