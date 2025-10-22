@@ -58,6 +58,11 @@ Route::middleware('api.key')->group(function () {
                     Route::post('payment-details', [CustomerDataController::class, 'paymentDetail']);
                     Route::post('generate-invoice', [CustomerDataController::class, 'generateInvoice']);
 
+                    // Withdrawal APIs
+                    Route::post('withdrawal-methods', [CustomerDataController::class, 'withdrawMethods']);
+                    Route::post('withdrawal-request', [CustomerDataController::class, 'requestWithdrawal']);
+                    Route::post('withdrawal-history', [CustomerDataController::class, 'listWithdrawals']);
+
                     // Profile APIs
                     Route::post('profile', [CustomerDataController::class, 'getProfile']);
                     Route::post('profile-update', [CustomerDataController::class, 'updateProfile']);

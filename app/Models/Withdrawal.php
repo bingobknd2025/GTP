@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+
 use Illuminate\Testing\Fluent\Concerns\Has;
 
 class Withdrawal extends Model
@@ -29,6 +30,11 @@ class Withdrawal extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class, 'user');
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function method()
+    {
+        return $this->belongsTo(Wdmethod::class, 'payment_mode', 'name');
     }
 }

@@ -14,6 +14,8 @@ use App\Models\Otp;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\Wallet;
+use App\Models\Wdmethod;
+use App\Models\Withdrawal;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -256,7 +258,7 @@ class CustomerDataController extends Controller
     public function createOrder(Request $request)
     {
         try {
-           
+
             try {
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
@@ -337,7 +339,6 @@ class CustomerDataController extends Controller
                 $order->save();
 
                 DB::commit();
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
@@ -383,7 +384,7 @@ class CustomerDataController extends Controller
                 });
             }
 
-            
+
             $beforeImageUrls = collect(json_decode($order->before_image, true) ?? [])
                 ->map(fn($path) => asset('storage/' . $path))
                 ->toArray();
@@ -400,7 +401,7 @@ class CustomerDataController extends Controller
                     'unite_price' => $order->unite_price,
                     'total_price' => $order->total_price,
                     'status' => $order->status,
-                    'before_image' => $beforeImageUrls, 
+                    'before_image' => $beforeImageUrls,
                     'created_at' => $order->created_at,
                 ]
             ], 201);
@@ -980,6 +981,22 @@ class CustomerDataController extends Controller
 
     public function generateInvoice(Request $request)
     {
+        try {
+            $customer = JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid or missing token',
+            ], 401);
+        }
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found',
+            ], 404);
+        }
+
         $request->validate([
             'id' => 'required|integer|exists:wallet_transactions,id',
         ]);
@@ -1005,5 +1022,41 @@ class CustomerDataController extends Controller
         $pdf = Pdf::loadView('invoices.transaction_invoice', $data);
 
         return $pdf->download('Invoice_' . $transaction->txn_no . '.pdf');
+    }
+
+    public function withdrawMethods(Request $request)
+    {
+        try {
+            try {
+                $customer = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token',
+                ], 401);
+            }
+
+            if (!$customer) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Customer not found',
+                ], 404);
+            }
+
+            $methods = Wdmethod::where('status', 'enabled')
+                ->select('id', 'name', 'charges_type', 'charges_amount', 'minimum', 'maximum', 'bankname', 'account_number', 'ifsc_code')
+                ->get();
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Withdrawal methods retrieved successfully',
+                'data'    => $methods
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 }
