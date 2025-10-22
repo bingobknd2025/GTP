@@ -60,6 +60,7 @@ Route::middleware('api.key')->group(function () {
 
                     // Withdrawal APIs
                     Route::post('withdrawal-methods', [CustomerDataController::class, 'withdrawMethods']);
+                    Route::post('withdrawal-otp', [CustomerDataController::class, 'withdrawOtp']);
                     Route::post('withdrawal-request', [CustomerDataController::class, 'withdrawRequest']);
                     Route::post('withdrawal-history', [CustomerDataController::class, 'listWithdrawals']);
 

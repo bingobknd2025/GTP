@@ -1060,7 +1060,90 @@ class CustomerDataController extends Controller
         }
     }
 
-      public function withdrawRequest(Request $request)
+    public function withdrawOtp(Request $request)
+    {
+        try {
+            $customer = JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid or missing token',
+            ], 401);
+        }
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'type'   => 'required|string|in:register,login,forgot_password,withdrawal'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()->first(),
+            ], 400);
+        }    
+
+        OtpHelper::generateAndSendOtp($customer, $request->type); 
+        CustomeHelper::logCustomerActivity($customer->id, 'Customer Requested Withdrawal OTP');
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Withdrawal OTP sent to your email.',
+        ]);
+    }
+
+    public function verifyWithdrawOtp(Request $request)
+    {
+        try {
+            $customer = JWTAuth::parseToken()->authenticate();
+        } catch (JWTException $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Invalid or missing token.',
+            ], 401);
+        }
+
+        if (!$customer) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Customer not found.',
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'otp'  => 'required|digits:6',
+            'type' => 'required|string|in:register,login,forgot_password,withdrawal',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $validator->errors()->first(),
+            ], 400);
+        }
+
+        $verification = OtpHelper::verifyOtp($customer->id, $request->type, $request->otp);
+
+        if (!$verification['status']) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $verification['message'],
+            ], 400);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => $verification['message'],
+        ], 200);
+    }
+
+    public function withdrawRequest(Request $request)
     {
         try {
             $customer = JWTAuth::parseToken()->authenticate();
@@ -1085,6 +1168,7 @@ class CustomerDataController extends Controller
             'account_number' => 'required|string|max:255',
             'ifsc_code' => 'required|string|max:255',
             'source' => 'required|string|max:255|in:WEB,APP',
+
         ]);
 
         if ($validator->fails()) {

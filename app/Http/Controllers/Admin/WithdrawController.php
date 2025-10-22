@@ -263,6 +263,29 @@ class WithdrawController extends Controller
         ]);
     }
 
+    public function updateStatus(Request $request, $id): JsonResponse
+    {
+        $validate = Validator::make($request->all(), [
+            'status' => 'required|in:Pending,Approved,Rejected,Unknown',
+        ]);
+
+        if ($validate->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validate->errors()->first(),
+            ], 400);
+        }
+
+        $withdrawal = Withdrawal::findOrFail($id);
+        $withdrawal->status = $request->input('status');
+        $withdrawal->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Withdrawal status updated successfully!',
+        ]);
+    }
+
 
     public function destroy($id)
     {

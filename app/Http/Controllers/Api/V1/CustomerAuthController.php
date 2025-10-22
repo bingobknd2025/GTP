@@ -47,7 +47,6 @@ class CustomerAuthController extends Controller
         $data = $validator->validated();
         $data['password'] = Hash::make($data['password']);
 
-        // If ref_by is provided → check franchise
         if (!empty($data['ref_by'])) {
             $franchise = Franchise::where('code', $data['ref_by'])->first();
             if ($franchise) {
@@ -84,7 +83,7 @@ class CustomerAuthController extends Controller
         if (!$token = auth('customer')->attempt($credentials)) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Invalid Credentials' 
+                'message' => 'Invalid Credentials'
             ], 401);
         }
 
@@ -100,7 +99,7 @@ class CustomerAuthController extends Controller
                 'email'          => $customer->email,
                 'verified_email' => (bool) $customer->email_verfied,
                 'kyc_status'     => $customer->kyc_status,
-                'account_verified'=> $customer->account_verify,
+                'account_verified' => $customer->account_verify,
                 'created_at'     => $customer->created_at,
                 'updated_at'     => $customer->updated_at,
                 'ref_by'         => $customer->ref_by,
@@ -112,7 +111,7 @@ class CustomerAuthController extends Controller
     {
         $request->validate([
             'otp'  => 'required|digits:6',
-            'type' => 'required|string'
+            'type' => 'required|string|in:register,login,forgot_password,withdrawal'
         ]);
 
 
@@ -161,11 +160,10 @@ class CustomerAuthController extends Controller
     public function resendOtp(Request $request)
     {
         $request->validate([
-            'type'  => 'required|string|in:register,login,forgot_password'
+            'type'  => 'required|string|in:register,login,forgot_password,withdrawal'
         ]);
 
         try {
-            // JWT Token se authenticate karne ki koshish
             $customer = JWTAuth::parseToken()->authenticate();
 
             if (!$customer) {
@@ -181,7 +179,6 @@ class CustomerAuthController extends Controller
             ], 401);
         }
 
-        // Generate & send OTP (safely)
         $otpSent = OtpHelper::generateAndSendOtp($customer, $request->type);
 
         if (!$otpSent) {
@@ -464,7 +461,7 @@ class CustomerAuthController extends Controller
             $kyc = Kyc::where('customer_id', $customer->id)->first();
 
             if (!$kyc) {
-                return response()->json([ 
+                return response()->json([
                     'status'  => true,
                     'message' => 'No KYC data found.',
                     'is_kyc_submitted' => ($customer->kyc_id && $customer->kyc_id != 0) ? true : false,

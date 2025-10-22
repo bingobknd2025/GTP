@@ -43,7 +43,6 @@ class OtpHelper
 
   public static function generateAndSendOtps($franchise, $type)
   {
-    // Guard: agar customer valid nahi hai
     if (!$franchise || !isset($franchise->id)) {
       return false;
     }
@@ -71,5 +70,45 @@ class OtpHelper
     });
 
     return true;
+  }
+
+  public static function verifyOtp($customerId, $type, $otp)
+  {
+    $typeRecord = Otp::where('customer_id', $customerId)
+      ->where('type', $type)
+      ->first();
+
+    if (!$typeRecord) {
+      return [
+        'status' => false,
+        'message' => 'Invalid request type or no OTP generated for this type.'
+      ];
+    }
+
+    $record = Otp::where('customer_id', $customerId)
+      ->where('type', $type)
+      ->where('otp', $otp)
+      ->first();
+
+    if (!$record) {
+      return [
+        'status' => false,
+        'message' => 'Incorrect OTP. Please check and try again.'
+      ];
+    }
+
+    if (Carbon::now()->greaterThan(Carbon::parse($record->expires_at))) {
+      return [
+        'status' => false,
+        'message' => 'OTP has expired. Please request a new one.'
+      ];
+    }
+
+    $record->delete();
+
+    return [
+      'status' => true,
+      'message' => 'OTP verified successfully.'
+    ];
   }
 }
