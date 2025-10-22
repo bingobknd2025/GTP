@@ -10,14 +10,14 @@ use App\Models\Franchise;
 use App\Models\Setting;
 use Carbon\Carbon;
 use DataTables;
+use Illuminate\Container\Attributes\Log;
 use Illuminate\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
-
 
 class KycController extends Controller
 {
@@ -89,15 +89,14 @@ class KycController extends Controller
 
                 // Final Status
                 ->editColumn('final_status', function ($row) {
-                        // Always return exact string value for ENUM
                     return $row->final_status === 'true' ? 'true' : 'false';
                 })
 
                 // KYC Type
                 ->addColumn('kyc_type', function ($row) {
-                    $statusText  = $row->kyc_type === 'online' ? 'online' : 'offline';
-                    $statusClass = $row->kyc_type === 'online' ? 'bg-primary' : 'bg-secondary';
-                    return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
+                    $typeText  = $row->kyc_type === 'online' ? 'Online' : 'Offline';
+                    $typeClass = $row->kyc_type === 'online' ? 'bg-primary' : 'bg-secondary';
+                    return '<span class="badge ' . $typeClass . '">' . $typeText . '</span>';
                 })
 
                 // Action buttons
@@ -452,7 +451,7 @@ class KycController extends Controller
             $customer = Customer::find($kyc->customer_id);
             if ($customer) {
                 if ($finalStatus === 'true') {
-                    $customer->kyc_status = 'Verified'; 
+                    $customer->kyc_status = 'Verified';
                     $customer->status = 'Approved';
                     $customerMessage = "Dear {$customer->fname},\n\nYour KYC has been approved successfully.\n\nThank you for completing your verification!";
                 } else {
@@ -470,7 +469,7 @@ class KycController extends Controller
                                 ? 'KYC Approved Successfully'
                                 : 'KYC Pending';
                             $message->to($customer->email, $customer->fname ?? '')
-                                    ->subject($subject);
+                                ->subject($subject);
                         });
                     } catch (\Exception $mailException) {
                         \Log::error("Customer mail failed: " . $mailException->getMessage());
@@ -513,7 +512,6 @@ class KycController extends Controller
                 'success' => true,
                 'message' => 'KYC final status updated successfully!'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error updating final_status: ' . $e->getMessage() . ' in ' . $e->getFile() . ' line ' . $e->getLine());

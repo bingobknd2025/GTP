@@ -3,22 +3,22 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Helpers\CustomeHelper;
 use App\Helpers\OtpHelper;
+use App\Helpers\CustomeHelper;
 use App\Models\Customer;
 use App\Models\Franchise;
-use App\Models\Wallet;
 use App\Models\Kyc;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Models\Wallet;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
 
 class FranchiseDataController extends Controller
 {
@@ -77,14 +77,13 @@ class FranchiseDataController extends Controller
             }
 
             $franchiseId = $franchise->id;
-            CustomeHelper::logFranchiseActivity($franchiseId, 'Viewed Dashboard');
 
             $franchise = Franchise::find($franchiseId);
             $totalCustomers = Customer::where('ref_by', $franchise->code)->count();
             $totalOrders = Order::where('franchise_id', $franchiseId)->count();
             $Orders = Order::where('franchise_id', $franchiseId)->orderBy('created_at', 'desc')->limit(4)->get();
             $totalRevenue = Order::where('franchise_id', $franchiseId)->sum('amount_paid');
-            $ref_link = 'http://3.112.175.221/customer/register?ref=' . $franchise->code;
+            $ref_link = 'http://localhost:5173/customer/register?ref=' . $franchise->code;
 
             $setting = Setting::first();
 
@@ -215,28 +214,28 @@ class FranchiseDataController extends Controller
                 $franchise = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid or missing token',
+                    'status'  => 'error',
+                    'message' => 'Invalid or missing token'
                 ], 401);
             }
 
             if (!$franchise) {
                 return response()->json([
-                    'success' => false,
-                    'message' => 'Franchise not found',
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
                 ], 404);
             }
 
             $validator = Validator::make($request->all(), [
-                'name'                   => 'nullable|string|max:100',
-                'address'                => 'nullable|string|max:255',
-                'email'                  => 'nullable|email|max:255|unique:franchises,email,' . $franchise->id,
-                'contact_no'             => 'nullable|string|max:20',
-                'contact_person_name'    => 'nullable|string|max:100',
-                'contact_person_number'  => 'nullable|string|max:20',
-                'store_lat'              => 'nullable|string|max:50',
-                'store_long'             => 'nullable|string|max:50',
-                'image'                  => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+                'name'       => 'nullable|string|max:100',
+                'address'       => 'nullable|string|max:100',
+                'email'       => 'nullable|email|max:255|unique:customers,email,' . $franchise->id,
+                'contact_no'       => 'nullable|string|max:20',
+                'contact_person_name'       => 'nullable|string|max:100',
+                'contact_person_number'       => 'nullable|string|max:20',
+                'store_lat'       => 'nullable|string|max:50',
+                'store_long'       => 'nullable|string|max:50',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             ]);
 
             if ($validator->fails()) {
@@ -246,24 +245,14 @@ class FranchiseDataController extends Controller
                 ], 422);
             }
 
-            // ✅ Update basic fields
-            $franchise->fill($request->only([
-                'name',
-                'address',
-                'email',
-                'contact_no',
-                'contact_person_name',
-                'contact_person_number',
-                'store_lat',
-                'store_long',
-            ]));
+            $franchise->fill($request->only(['name', 'address', 'email', 'contact_no', 'contact_person_name', 'contact_person_number', 'store_lat', 'store_long']));
 
             if ($request->hasFile('image')) {
                 if ($franchise->image && Storage::disk('public')->exists($franchise->image)) {
                     Storage::disk('public')->delete($franchise->image);
                 }
 
-                $path = $request->file('image')->store('franchise_profiles', 'public');
+                $path = $request->file('image')->store('profiles', 'public');
                 $franchise->image = $path;
             }
 
@@ -277,6 +266,72 @@ class FranchiseDataController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
+                'message' => 'Something went wrong: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateBankDetails(Request $request)
+    {
+        try {
+            try {
+                $franchise = JWTAuth::parseToken()->authenticate();
+            } catch (JWTException $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid or missing token.',
+                ], 401);
+            }
+
+            if (!$franchise) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Franchise not found.',
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'account_name'    => 'nullable|string|max:255',
+                'account_type'    => 'nullable|string|max:50',
+                'ifsc_code'       => 'nullable|string|max:20',
+                'account_number'  => 'nullable|string|max:20',
+                'account_bank'    => 'nullable|string|max:100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $validator->errors()->first(),
+                ], 422);
+            }
+
+            $franchise->update([
+                'account_bank'   => $request->account_bank,
+                'account_name'   => $request->account_name,
+                'account_number' => $request->account_number,
+                'ifsc_code'      => $request->ifsc_code,
+                'account_type'   => $request->account_type,
+            ]);
+
+            CustomeHelper::logCustomerActivity($franchise->id, 'Updated Bank Details');
+
+            if (!empty($franchise->email)) {
+                Mail::send('emails.bank-details-updated', [
+                    'customer' => $franchise,
+                ], function ($message) use ($franchise) {
+                    $message->to($franchise->email, $franchise->fname . ' ' . $franchise->lname)
+                        ->subject('Your Bank Details Have Been Updated');
+                });
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Bank details updated successfully.',
+                'data'    => $franchise,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
                 'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
@@ -464,25 +519,26 @@ class FranchiseDataController extends Controller
             ], 500);
         }
     }
-    
+
     public function createOrder(Request $request)
     {
         try {
             $franchise = JWTAuth::parseToken()->authenticate();
         } catch (JWTException $e) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'message' => 'Invalid or missing token'
             ], 401);
         }
 
         if (!$franchise) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'message' => 'Franchise not found'
             ], 404);
         }
 
+        // Validation
         $validate = Validator::make($request->all(), [
             'customer_id'             => 'required|exists:customers,id',
             'purity'                  => 'nullable|string|max:100',
@@ -491,7 +547,7 @@ class FranchiseDataController extends Controller
             'unite_price'             => 'required|numeric|min:0',
             'total_price'             => 'required|numeric|min:0',
             'amount_paid'             => 'nullable|numeric|min:0',
-            'status'                  => 'required|in:Created,Gold_Recieved,Payment_Done,Order_Cancelled,In_Process',
+            'status'                  => 'required|in:Created,Gold_Recived,Payment_Done,Order_Cancelled,In_Process',
             'order_note'              => 'nullable|string',
 
             'before_image'   => 'nullable|array',
@@ -503,7 +559,7 @@ class FranchiseDataController extends Controller
 
         if ($validate->fails()) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'message' => $validate->errors()->first(),
             ], 400);
         }
@@ -558,6 +614,7 @@ class FranchiseDataController extends Controller
         $mainSettings = Setting::first();
         $user = Customer::find($order->customer_id);
 
+        $order = $mainSettings->website_currency;
 
         // To Admin
         if ($mainSettings && $mainSettings->mail_from_email) {
@@ -597,251 +654,12 @@ class FranchiseDataController extends Controller
 
 
         return response()->json([
-            'status' => 'success',
+            'success' => true,
             'message' => 'Order created successfully!',
             'website_currency' => $mainSettings->website_currency,
             'data'    => $order
         ]);
     }
-
-    // public function updateOrder(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'order_id'               => 'required|integer|exists:orders,id',
-    //         'purity'                 => 'nullable|string|max:100',
-    //         'after_melting_weight'   => 'required|numeric|min:0',
-    //         'unite_price'            => 'nullable|numeric|min:0',
-    //         'total_price_after_melt' => 'required|numeric|min:0',
-    //         'amount_paid'            => 'nullable|numeric|min:0',
-    //         'status'                 => 'required|in:Created,Gold_Recieved,Payment_Done,Order_Cancelled,In_Process,Send_to_customer_approval',
-    //         'order_note'             => 'required|string',
-    //         'after_image'            => 'nullable|array',
-    //         'after_image.*'          => 'image|mimes:jpeg,png,jpg|max:3072',
-    //     ]);
-
-    //     if ($validator->fails()) {
-    //         return response()->json([
-    //             'status'  => 'error',
-    //             'message' => 'Validation Error',
-    //             'errors'  => $validator->errors(),
-    //         ], 422);
-    //     }
-
-    //     try {
-    //         try {
-    //             $franchise = JWTAuth::parseToken()->authenticate();
-    //         } catch (JWTException $e) {
-    //             return response()->json([
-    //                 'status'  => 'error',
-    //                 'message' => 'Invalid or missing token',
-    //             ], 401);
-    //         }
-
-    //         if (!$franchise) {
-    //             return response()->json([
-    //                 'status'  => 'error',
-    //                 'message' => 'Franchise not found',
-    //             ], 404);
-    //         }
-
-    //         $order = Order::find($request->order_id);
-
-    //         if (!$order) {
-    //             return response()->json([
-    //                 'status'  => 'error',
-    //                 'message' => 'Order not found',
-    //             ], 404);
-    //         }
-
-    //         if ($order->franchise_id !== $franchise->id) {
-    //             return response()->json([
-    //                 'status'  => 'error',
-    //                 'message' => 'You do not have permission to update this order',
-    //             ], 403);
-    //         }
-
-    //         $order->fill($request->only([
-    //             'purity',
-    //             'after_melting_weight',
-    //             'unite_price',
-    //             'total_price_after_melt',
-    //             'amount_paid',
-    //             'status',
-    //             'order_note',
-    //         ]));
-
-    //         if ($request->hasFile('after_image')) {
-    //             $afterImages = json_decode($order->after_image, true) ?? [];
-
-    //             foreach ($request->file('after_image') as $file) {
-    //                 $afterImages[] = $file->store('orders/after', 'public');
-    //             }
-
-    //             $order->after_image = json_encode($afterImages);
-    //         }
-
-    //         if ($request->status === 'Payment_Done') {
-    //             if ($order->approval_status !== 'Accepted') {
-    //                 return response()->json([
-    //                     'status'  => 'error',
-    //                     'message' => 'Customer has not yet approved this order',
-    //                 ], 400);
-    //             }
-
-    //             $latestTxn = DB::table('wallet_transactions')
-    //                 ->orderBy('id', 'desc')
-    //                 ->first();
-
-    //             $nextNumber = 1;
-    //             if ($latestTxn && preg_match('/TXN\d{4}(\d{6})/', $latestTxn->txn_no, $matches)) {
-    //                 $nextNumber = intval($matches[1]) + 1;
-    //             }
-
-    //             $txnNo = 'TXN' . date('Y') . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-
-    //             $order->updated_at = now();
-    //             $order->save();
-
-    //             if ($order->amount_paid > 0) {
-    //                 $customer = Customer::find($order->customer_id);
-    //                 if ($customer) {
-    //                     $customer->account_balance += $order->amount_paid;
-    //                     $customer->save();
-    //                 }
-    //             }
-
-    //             DB::table('wallet_transactions')->insert([
-    //                 'txn_no'        => $txnNo,
-    //                 'order_id'      => $order->id,
-    //                 'franchise_id'  => $franchise->id,
-    //                 'customer_id'   => $order->customer_id,
-    //                 'amount'        => $order->amount_paid,
-    //                 'type'          => 'Credit',
-    //                 'note'          => $request->order_note ?? 'Franchise confirmed customer approved order',
-    //                 'created_at'    => now(),
-    //                 'updated_at'    => now(),
-    //             ]);
-
-    //             CustomeHelper::logFranchiseActivity($franchise->id, 'Confirmed Customer Approved Order');
-
-    //             $mainSettings = Setting::first();
-    //             $customer = Customer::find($order->customer_id);
-    //             $afterImages = json_decode($order->after_image, true) ?? [];
-
-    //             if ($mainSettings && $mainSettings->mail_from_email) {
-    //                 Mail::send('emails.franchise_confirm_customer_approval', [
-    //                     'order'       => $order,
-    //                     'franchise'   => $franchise,
-    //                     'for'         => 'admin',
-    //                     'afterImages' => $afterImages,
-    //                 ], function ($message) use ($mainSettings) {
-    //                     $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
-    //                         ->subject('Franchise Confirmed Customer Approved Order');
-    //                 });
-    //             }
-
-    //             if ($customer && $customer->email) {
-    //                 Mail::send('emails.franchise_confirm_customer_approval', [
-    //                     'order'       => $order,
-    //                     'customer'    => $customer,
-    //                     'for'         => 'customer',
-    //                     'afterImages' => $afterImages,
-    //                 ], function ($message) use ($customer) {
-    //                     $message->to($customer->email, $customer->fname ?? '')
-    //                         ->subject('Your Order Has Been Confirmed by Franchise');
-    //                 });
-    //             }
-    //         }
-
-    //         $order->save();
-
-    //         $mainSettings = Setting::first();
-    //         $user = Customer::find($order->customer_id);
-    //         $afterImages = json_decode($order->after_image, true) ?? [];
-
-    //         if ($request->status === 'Send_to_customer_approval') {
-
-    //             if ($user && $user->email) {
-    //                 Mail::send('emails.order_send_to_approval', [
-    //                     'order'       => $order,
-    //                     'user'        => $user,
-    //                     'for'         => 'customer_approval',
-    //                     'afterImages' => $afterImages,
-    //                 ], function ($message) use ($user) {
-    //                     $message->to($user->email, $user->fname ?? '')
-    //                         ->subject('Your Order is Awaiting Your Approval');
-    //                 });
-    //             }
-
-    //             if ($mainSettings && $mainSettings->mail_from_email) {
-    //                 Mail::send('emails.order_send_to_approval', [
-    //                     'order'       => $order,
-    //                     'settings'    => $mainSettings,
-    //                     'for'         => 'admin_approval',
-    //                     'afterImages' => $afterImages,
-    //                 ], function ($message) use ($mainSettings) {
-    //                     $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
-    //                         ->subject('Order Sent to Customer for Approval');
-    //                 });
-    //             }
-
-    //             return response()->json([
-    //                 'status'           => 'success',
-    //                 'message'          => 'Order sent to customer for approval successfully',
-    //                 'website_currency' => $mainSettings->website_currency ?? 'INR',
-    //                 'data'             => $order,
-    //             ]);
-    //         }
-
-    //         if ($mainSettings && $mainSettings->mail_from_email) {
-    //             Mail::send('emails.order_notification', [
-    //                 'order'       => $order,
-    //                 'settings'    => $mainSettings,
-    //                 'for'         => 'admin',
-    //                 'afterImages' => $afterImages,
-    //             ], function ($message) use ($mainSettings) {
-    //                 $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
-    //                     ->subject('Order Updated');
-    //             });
-    //         }
-
-    //         if ($user && $user->email) {
-    //             Mail::send('emails.order_notification', [
-    //                 'order'       => $order,
-    //                 'user'        => $user,
-    //                 'for'         => 'user',
-    //                 'afterImages' => $afterImages,
-    //             ], function ($message) use ($user) {
-    //                 $message->to($user->email, $user->fname ?? '')
-    //                     ->subject('Your Order Has Been Updated');
-    //             });
-    //         }
-
-    //         if ($franchise && $franchise->email) {
-    //             Mail::send('emails.order_notification', [
-    //                 'order'       => $order,
-    //                 'franchise'   => $franchise,
-    //                 'for'         => 'franchise',
-    //                 'afterImages' => $afterImages,
-    //             ], function ($message) use ($franchise) {
-    //                 $message->to($franchise->email, $franchise->name ?? '')
-    //                     ->subject('Order Updated under Your Franchise');
-    //             });
-    //         }
-
-    //         return response()->json([
-    //             'status'           => 'success',
-    //             'message'          => 'Order updated successfully',
-    //             'website_currency' => $mainSettings->website_currency ?? 'INR',
-    //             'data'             => $order,
-    //         ]);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'status'  => 'error',
-    //             'message' => $e->getMessage(),
-    //         ], 500);
-    //     }
-    // }
 
     public function updateOrder(Request $request)
     {
@@ -1119,7 +937,6 @@ class FranchiseDataController extends Controller
                 'website_currency' => $mainSettings->website_currency ?? 'INR',
                 'data'             => $order,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -1127,7 +944,6 @@ class FranchiseDataController extends Controller
             ], 500);
         }
     }
-
 
     public function confirmApproval(Request $request)
     {
@@ -1199,6 +1015,7 @@ class FranchiseDataController extends Controller
             // ✅ Update Order
             $order->status = 'In_Process';
             $order->order_note = $request->order_note ?? null;
+            $order->transaction_id = $txnNo; // also store in order
             $order->updated_at = now();
             $order->save();
 
@@ -1266,7 +1083,6 @@ class FranchiseDataController extends Controller
                     'order_note'     => $order->order_note,
                 ],
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
@@ -1383,7 +1199,7 @@ class FranchiseDataController extends Controller
 
             $kycList = Kyc::whereIn('customer_id', $customerIds)
                 ->orderBy('created_at', 'desc')
-                ->paginate(5, [
+                ->paginate(10, [
                     'id',
                     'customer_id',
                     'first_name',
@@ -1653,7 +1469,7 @@ class FranchiseDataController extends Controller
                     'txn_no'       => $payment->txn_no,
                     'order_id'     => $payment->order_id,
                     'customer_id'  => $payment->customer_id,
-                    'customer_name'=> $customerName,
+                    'customer_name' => $customerName,
                     'franchise_id' => $payment->franchise_id,
                     'amount'       => $payment->amount,
                     'type'         => $payment->type,
@@ -1773,7 +1589,6 @@ class FranchiseDataController extends Controller
                 'message' => 'Transaction details retrieved successfully',
                 'data'    => $data,
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',

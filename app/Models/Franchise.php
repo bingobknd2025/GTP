@@ -24,6 +24,12 @@ class Franchise extends Authenticatable implements JWTSubject
         'store_long',
         'status',
         'image',
+        'bank_name',
+        'account_name',
+        'account_type',
+        'ifsc_code',
+        'account_number',
+        'account_bank',
         'created_by',
         'updated_by',
     ];

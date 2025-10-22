@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Mail;
 
 class FranchiseAuthController extends Controller
 {
@@ -185,33 +184,11 @@ class FranchiseAuthController extends Controller
 
     public function logout()
     {
-        try {
-            $token = auth('franchise')->getToken();
-
-            if ($token) {
-                auth('franchise')->invalidate($token);
-            }
-
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Successfully logged out'
-            ], 200);
-        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Successfully logged out'
-            ], 200);
-        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
-            return response()->json([
-                'status'  => 'success',
-                'message' => 'Successfully logged out'
-            ], 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Something went wrong while logging out'
-            ], 500);
-        }
+        auth('franchise')->logout();
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Successfully logged out'
+        ], 200);
     }
 
     public function checkTokenExpiry(Request $request)
@@ -969,7 +946,7 @@ class FranchiseAuthController extends Controller
 
         // Invalidate previous OTPs for forgot_password
         Otp::where('customer_id', $franchise->id)
-            ->where('type', 'forgot_password') 
+            ->where('type', 'forgot_password')
             ->delete();
 
         // Generate & send new OTP with same type

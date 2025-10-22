@@ -108,23 +108,11 @@ class FranchiseController extends Controller
         $data['ref_link'] = $data['code'];
 
         // Image upload
-        // if ($image = $request->file('image')) {
-        //     $destinationPath = 'images/franchises/';
-        //     $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
-        //     $image->move($destinationPath, $profileImage);
-        //     $data['image'] = "/$destinationPath" . $profileImage;
-        // }
-
         if ($image = $request->file('image')) {
-            $destinationPath = public_path('images/franchises');
-            if (!file_exists($destinationPath)) {
-                mkdir($destinationPath, 0755, true);
-            }
-
+            $destinationPath = 'images/franchises/';
             $profileImage = date('YmdHis') . "." . $image->getClientOriginalExtension();
             $image->move($destinationPath, $profileImage);
-
-            $data['image'] = 'images/franchises/' . $profileImage; // relative for frontend
+            $data['image'] = "/$destinationPath" . $profileImage;
         }
 
         Franchise::create($data);

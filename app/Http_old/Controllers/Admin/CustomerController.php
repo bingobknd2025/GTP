@@ -87,7 +87,7 @@ class CustomerController extends Controller
 
     public function create(): View
     {
-        $franchises = Franchise::all();
+        $franchises = Franchise::where('status', 'Active')->get();
         return view('admin.customers.create', compact('franchises'));
     }
 

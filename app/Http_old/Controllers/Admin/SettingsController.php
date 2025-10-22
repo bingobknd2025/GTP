@@ -6,8 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use Hamcrest\Core\Set;
 use Illuminate\Http\Request;
-use App\Helpers\CustomeHelper;
+use App\Models\UserActivity;
 use Illuminate\Support\Facades\Auth;
+use App\Helpers\CustomeHelper;
 
 class SettingsController extends Controller
 {
@@ -37,6 +38,7 @@ class SettingsController extends Controller
             'website_name',
             'website_email',
             'website_contact',
+            'website_currency',
         ]);
 
         // Enum checkboxes

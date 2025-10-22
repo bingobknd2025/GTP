@@ -5,7 +5,6 @@ use App\Http\Controllers\Api\V1\CustomerDataController;
 use App\Http\Controllers\Api\V1\FranchiseAuthController;
 use App\Http\Controllers\Api\V1\FranchiseDataController;
 use App\Http\Controllers\HomeController;
-use App\Models\Franchise;
 use Dflydev\DotAccessData\Data;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -26,13 +25,11 @@ Route::middleware('api.key')->group(function () {
             Route::post('reset-password', [CustomerAuthController::class, 'resetPassword']);
 
             Route::middleware('auth:customer')->group(function () {
-
                 // OTP API
                 Route::post('verify-otp', [CustomerAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [CustomerAuthController::class, 'resendOtp']);
 
                 Route::middleware('account.verified')->group(function () {
-
                     // Online KYC API
                     Route::post('kyc/status', [CustomerAuthController::class, 'kycstatus']);
                     Route::post('kyc/access-token', [CustomerAuthController::class, 'getAccessToken']);
@@ -64,10 +61,9 @@ Route::middleware('api.key')->group(function () {
                     // Profile APIs
                     Route::post('profile', [CustomerDataController::class, 'getProfile']);
                     Route::post('profile-update', [CustomerDataController::class, 'updateProfile']);
-                    Route::post('bank-detail-update', [CustomerDataController::class, 'updateBankDetails']);
+                    Route::post('bank-details-update', [CustomerDataController::class, 'updateBankDetails']);
                     Route::post('change-password-otp', [CustomerAuthController::class, 'requestChangePasswordOtp']);
                     Route::post('change-password', [CustomerAuthController::class, 'changePassword']);
-
 
                     // Support Ticket APIs
                     Route::post('ticket-create', [CustomerDataController::class, 'createTicket']);
@@ -84,14 +80,18 @@ Route::middleware('api.key')->group(function () {
         Route::prefix('franchise')->group(function () {
             Route::post('register', [FranchiseAuthController::class, 'register']);
             Route::post('login', [FranchiseAuthController::class, 'login']);
+            Route::post('forgot-password', [FranchiseAuthController::class, 'forgotPassword']);
+            Route::post('resend-forgot-password', [FranchiseAuthController::class, 'resendForgotPasswordOtp']);
+            Route::post('reset-password', [FranchiseAuthController::class, 'resetPassword']);
 
             Route::middleware('auth:franchise')->group(function () {
 
                 Route::post('dashboard', [FranchiseDataController::class, 'dashboard']);
                 Route::post('profile', [FranchiseDataController::class, 'profile']);
+                Route::post('profile-update', [FranchiseDataController::class, 'updateProfile']);
+                Route::post('bank-details-update', [FranchiseDataController::class, 'updateBankDetails']);
                 Route::post('change-password-otp', [FranchiseAuthController::class, 'requestChangePasswordOtp']);
                 Route::post('change-password', [FranchiseAuthController::class, 'changePassword']);
-
                 // OTP API
                 Route::post('verify-otp', [FranchiseAuthController::class, 'verifyOtp']);
                 Route::post('resend-otp', [FranchiseAuthController::class, 'resendOtp']);
@@ -118,6 +118,7 @@ Route::middleware('api.key')->group(function () {
                 Route::post('payment-details', [FranchiseDataController::class, 'paymentDetail']);
                 Route::post('update-payment-status', [FranchiseDataController::class, 'updatePaymentStatus']);
                 Route::post('generate-invoice', [FranchiseDataController::class, 'generateInvoice']);
+
 
                 Route::post('logout', [FranchiseAuthController::class, 'logout']);
                 Route::post('check-token', [FranchiseAuthController::class, 'checkTokenExpiry']);

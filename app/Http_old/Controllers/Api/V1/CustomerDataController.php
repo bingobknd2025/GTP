@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Helpers\OtpHelper;
 use App\Helpers\CustomeHelper;
+use App\Helpers\OtpHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Enquiry;
@@ -14,6 +14,7 @@ use App\Models\Otp;
 use App\Models\Setting;
 use App\Models\Ticket;
 use App\Models\Wallet;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,8 +24,6 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Str;
 
 class CustomerDataController extends Controller
 {
@@ -49,11 +48,12 @@ class CustomerDataController extends Controller
             }
 
             $customerId = $customer->id;
+
             CustomeHelper::logCustomerActivity($customerId, 'Viewed Dashboard');
 
             $customer = Customer::find($customerId);
             $totalOrders = Order::where('customer_id', $customerId)->count();
-            $Orders = Order::where('customer_id', $customerId)->latest()->get();
+            $Orders = Order::where('customer_id', $customerId)->get();
 
             return response()->json([
                 'status'  => 'success',
@@ -127,22 +127,22 @@ class CustomerDataController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'fname'       => 'nullable|string|max:100',
-                'lname'       => 'nullable|string|max:100',
-                'email'       => 'nullable|email|max:255|unique:customers,email,' . $customer->id,
-                'mobile_no'       => 'nullable|string|max:20',
+                'fname'       => 'required|string|max:100',
+                'lname'       => 'required|string|max:100',
+                'email'       => 'required|email|max:255|unique:customers,email,' . $customer->id,
+                'phone'       => 'nullable|string|max:20',
                 'address'     => 'nullable|string|max:500',
                 'profile_pic' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
-                    'status' => 'error',
+                    'success' => false,
                     'message' => $validator->errors()->first(),
                 ], 422);
             }
 
-            $customer->fill($request->only(['fname', 'lname', 'email', 'mobile_no', 'address']));
+            $customer->fill($request->only(['fname', 'lname', 'email', 'phone', 'address']));
 
             if ($request->hasFile('profile_pic')) {
                 if ($customer->profile_pic && Storage::disk('public')->exists($customer->profile_pic)) {
@@ -156,13 +156,13 @@ class CustomerDataController extends Controller
             $customer->save();
 
             return response()->json([
-                'status' => 'success',
+                'success' => true,
                 'message' => 'Profile updated successfully',
                 'data'    => $customer,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'success' => false,
                 'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
@@ -175,14 +175,14 @@ class CustomerDataController extends Controller
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
                 return response()->json([
-                    'success' => false,
+                    'status' => 'error',
                     'message' => 'Invalid or missing token.',
                 ], 401);
             }
 
             if (!$customer) {
                 return response()->json([
-                    'success' => false,
+                    'status' => 'error',
                     'message' => 'Customer not found.',
                 ], 404);
             }
@@ -197,7 +197,7 @@ class CustomerDataController extends Controller
 
             if ($validator->fails()) {
                 return response()->json([
-                    'success' => false,
+                    'status' => 'error',
                     'message' => $validator->errors()->first(),
                 ], 422);
             }
@@ -222,13 +222,13 @@ class CustomerDataController extends Controller
             }
 
             return response()->json([
-                'success' => true,
+                'status' => 'success',
                 'message' => 'Bank details updated successfully.',
                 'data'    => $customer,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => false,
+                'status' => 'error',
                 'message' => 'Something went wrong: ' . $e->getMessage(),
             ], 500);
         }
@@ -256,7 +256,7 @@ class CustomerDataController extends Controller
     public function createOrder(Request $request)
     {
         try {
-           
+
             try {
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
@@ -337,7 +337,6 @@ class CustomerDataController extends Controller
                 $order->save();
 
                 DB::commit();
-
             } catch (\Exception $e) {
                 DB::rollBack();
                 throw $e;
@@ -383,7 +382,7 @@ class CustomerDataController extends Controller
                 });
             }
 
-            
+
             $beforeImageUrls = collect(json_decode($order->before_image, true) ?? [])
                 ->map(fn($path) => asset('storage/' . $path))
                 ->toArray();
@@ -400,7 +399,7 @@ class CustomerDataController extends Controller
                     'unite_price' => $order->unite_price,
                     'total_price' => $order->total_price,
                     'status' => $order->status,
-                    'before_image' => $beforeImageUrls, 
+                    'before_image' => $beforeImageUrls,
                     'created_at' => $order->created_at,
                 ]
             ], 201);
@@ -429,6 +428,7 @@ class CustomerDataController extends Controller
         }
 
         try {
+            // ✅ Authenticate customer
             try {
                 $customer = JWTAuth::parseToken()->authenticate();
             } catch (JWTException $e) {
@@ -480,7 +480,7 @@ class CustomerDataController extends Controller
             $order->updated_at = now();
             $order->save();
 
-            CustomeHelper::logCustomerActivity($customer->id, 'Customer Updated Order Approval');
+            CustomeHelper::logCustomerActivity($customer->id, 'Updated Order Approval', $order->id);
 
             $mainSettings = Setting::first();
             $franchise = Franchise::find($order->franchise_id);

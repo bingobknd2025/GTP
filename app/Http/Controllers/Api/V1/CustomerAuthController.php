@@ -18,8 +18,6 @@ use Illuminate\Support\Facades\Mail;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
 use Illuminate\Support\Facades\Validator;
-use App\Helpers\CustomeHelper;
-use Exception;
 
 class CustomerAuthController extends Controller
 {
@@ -30,6 +28,7 @@ class CustomerAuthController extends Controller
     {
         $this->apiKey = config('services.firebase.api_key');
     }
+
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -41,35 +40,18 @@ class CustomerAuthController extends Controller
             'ref_by'    => 'nullable|string|max:100',
         ]);
 
-
-
         if ($validator->fails()) {
-            // if($request->fname() == null){
-            //     return response()->json([
-            //         'status'  => 'error',
-            //         'message' => 'First name is required',
-            //     ], 422);
-            // }
-            // if($request->lname() == null){
-            //     return response()->json([
-            //         'status'  => 'error',
-            //         'message' => 'Last name is required',
-            //     ], 422);
-            // }
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Validation errors',
-                'errors'  => $validator->errors()
-            ], 422);
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $data = $validator->validated();
         $data['password'] = Hash::make($data['password']);
 
+        // If ref_by is provided → check franchise
         if (!empty($data['ref_by'])) {
             $franchise = Franchise::where('code', $data['ref_by'])->first();
             if ($franchise) {
-                $data['franchise_id'] = $franchise->id;
+                $data['franchise_id'] = $franchise->id; // Save franchise_id in customers table
             }
         }
 
@@ -92,7 +74,7 @@ class CustomerAuthController extends Controller
                 'ref_by'      => $customer->ref_by,
                 'franchise_id' => $customer->franchise_id ?? null,
             ]
-        ], 200);
+        ], 201);
     }
 
     public function login(Request $request)
@@ -102,7 +84,7 @@ class CustomerAuthController extends Controller
         if (!$token = auth('customer')->attempt($credentials)) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Invalid Credentials'
+                'message' => 'Invalid Credentials' 
             ], 401);
         }
 
@@ -117,6 +99,8 @@ class CustomerAuthController extends Controller
                 'name'           => $customer->fname . $customer->lname,
                 'email'          => $customer->email,
                 'verified_email' => (bool) $customer->email_verfied,
+                'kyc_status'     => $customer->kyc_status,
+                'account_verified'=> $customer->account_verify,
                 'created_at'     => $customer->created_at,
                 'updated_at'     => $customer->updated_at,
                 'ref_by'         => $customer->ref_by,
@@ -227,7 +211,6 @@ class CustomerAuthController extends Controller
             'message' => 'Successfully logged out'
         ], 200);
     }
-
 
     public function checkTokenExpiry(Request $request)
     {
@@ -399,8 +382,7 @@ class CustomerAuthController extends Controller
                     ]);
                 }
 
-                // User update
-                $user->account_verify = $status;
+                $user->account_verify = 'Verified';
                 $user->save();
 
                 // Mail bhejna
@@ -482,7 +464,7 @@ class CustomerAuthController extends Controller
             $kyc = Kyc::where('customer_id', $customer->id)->first();
 
             if (!$kyc) {
-                return response()->json([
+                return response()->json([ 
                     'status'  => true,
                     'message' => 'No KYC data found.',
                     'is_kyc_submitted' => ($customer->kyc_id && $customer->kyc_id != 0) ? true : false,
@@ -733,7 +715,7 @@ class CustomerAuthController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'phone_number' => 'required|string|max:15|unique:customers,mobile_no',
+                'phone_number' => 'required|string|max:15|exists:customers,mobile_no',
             ]);
 
             if ($validator->fails()) {
@@ -757,7 +739,7 @@ class CustomerAuthController extends Controller
                 ['customer_id' => $customer->id],
                 [
                     'phone_number'       => $request->phone_number,
-                    'mobile_verified_at' => now(),
+                    'mobile_verified_at' => Carbon::now(),
                     'mobile_status'      => 'true',
                     'updated_by'         => $customer->id,
                 ]
@@ -782,7 +764,6 @@ class CustomerAuthController extends Controller
             ], 500);
         }
     }
-
 
     public function sendFirebaseOtp(Request $request)
     {
@@ -923,7 +904,7 @@ class CustomerAuthController extends Controller
                 ], 422);
             }
 
-            $kyc->final_status = 'true';
+            $kyc->final_status = 'false';
             $kyc->status = 'Pending';
             $kyc->kyc_type = 'Offline';
             $kyc->updated_by = $customer->id;

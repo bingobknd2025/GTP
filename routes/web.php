@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\ActivityController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -12,13 +11,15 @@ use App\Models\User;
 use App\Http\Controllers\Front\FranchiseAuthController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DepositController;
-use App\Http\Controllers\Admin\EnquiryController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\TransactionController;
+use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\WithdrawController;
+use App\Http\Controllers\Admin\EnquiryController;
+
 
 // Login
 
@@ -151,6 +152,17 @@ Route::middleware('auth')->group(function () {
         Route::delete('destroy/{id}', [TransactionController::class, 'destroy'])->name('destroy')->middleware(['permission:Deposit Delete']);
     });
 
+    // Admin Activity Routes
+    Route::prefix('admin/activity')->name('admin.activity.')->group(function () {
+        Route::get('/', [ActivityController::class, 'index'])->name('index')->middleware(['permission:Activity List']);
+        Route::get('create', [ActivityController::class, 'create'])->name('create')->middleware(['permission:Activity Add']);
+        Route::post('store', [ActivityController::class, 'store'])->name('store')->middleware(['permission:Activity Add']);
+        Route::get('edit/{id}', [ActivityController::class, 'edit'])->name('edit')->middleware(['permission:Activity Edit']);
+        Route::put('update/{id}', [ActivityController::class, 'update'])->name('update')->middleware(['permission:Activity Edit']);
+        Route::get('show/{id}', [ActivityController::class, 'show'])->name('show')->middleware(['permission:Activity View']);
+        Route::delete('destroy/{id}', [ActivityController::class, 'destroy'])->name('destroy')->middleware(['permission:Activity Delete']);
+    });
+
 
     Route::get('/user/import-excel/view', [UserController::class, 'import_excel_view'])->name('admin.users.import_excel_view')->middleware(['permission:User Excel Import View']);
     Route::post('/user/import-excel', [UserController::class, 'import_excel'])->name('admin.users.import_excel')->middleware(['permission:User Excel Import']);
@@ -196,7 +208,6 @@ Route::middleware('auth')->group(function () {
         Route::get('show/{id}', [EnquiryController::class, 'show'])->name('show');
         Route::delete('destroy/{id}', [EnquiryController::class, 'destroy'])->name('destroy');
     });
-
 
     Route::get('/admin/users/{id}/pincode', [UserController::class, 'pincode_index'])->name('users.pincode_index');
     Route::post('/users/pincode/store', [UserController::class, 'pincode_store'])->name('users.pincode_store');
