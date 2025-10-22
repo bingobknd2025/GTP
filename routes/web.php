@@ -128,6 +128,7 @@ Route::middleware('auth')->group(function () {
         Route::put('update/{id}', [WithdrawController::class, 'update'])->name('update')->middleware(['permission:Withdraw Edit']);
         Route::get('show/{id}', [WithdrawController::class, 'show'])->name('show')->middleware(['permission:Withdraw View']);
         Route::delete('destroy/{id}', [WithdrawController::class, 'destroy'])->name('destroy')->middleware(['permission:Withdraw Delete']);
+        Route::post('{id}/update-status', [WithdrawController::class, 'updateStatus'])->name('updateStatus');
     });
 
     // Order Routes

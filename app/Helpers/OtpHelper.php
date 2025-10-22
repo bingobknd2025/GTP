@@ -11,7 +11,6 @@ class OtpHelper
 {
   public static function generateAndSendOtp($customer, $type)
   {
-    // Guard: agar customer valid nahi hai
     if (!$customer || !isset($customer->id)) {
       return false;
     }

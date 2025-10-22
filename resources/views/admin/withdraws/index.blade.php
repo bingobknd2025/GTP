@@ -86,7 +86,7 @@
          processing: true,
          serverSide: true,
          responsive: true,
-         ajax: "{{ route('admin.withdraws.index') }}", // ✅ withdrawal route
+         ajax: "{{ route('admin.withdraws.index') }}",
          columns: [{
                data: 'id',
                name: 'id'
@@ -96,8 +96,8 @@
                name: 'txn_id'
             },
             {
-               data: 'user',
-               name: 'user'
+               data: 'customer',
+               name: 'customer'
             },
             {
                data: 'amount',
@@ -144,7 +144,7 @@
                name: 'status',
                orderable: false,
                searchable: false
-            }, // ✅ Already badge HTML from backend
+            },
             {
                data: 'action',
                name: 'action',
@@ -154,31 +154,56 @@
          ]
       });
 
-      // Delete action
+      // 🗑️ Delete Action
       $('#responsiveDataTable').on('submit', '.delete-withdraw-form', function(e) {
          e.preventDefault();
-
          let form = $(this);
-         let url = form.attr('action');
-
          if (confirm('Are you sure to delete this withdrawal entry?')) {
             $.ajax({
-               url: url,
+               url: form.attr('action'),
                type: 'POST',
                data: form.serialize(),
                success: function(response) {
-                  toastr.success(response.message || 'Withdrawal deleted successfully!');
+                  toastr.success(response.message || 'Deleted successfully!');
                   table.ajax.reload();
                },
                error: function(xhr) {
-                  toastr.error(xhr.responseJSON?.message || 'Error occurred. Please try again.');
-                  console.error('AJAX Error:', xhr.responseText);
+                  toastr.error(xhr.responseJSON?.message || 'Something went wrong.');
                }
             });
          }
       });
 
+      // 🔄 Change Status
+      $('#responsiveDataTable').on('click', '.change-status', function(e) {
+         e.preventDefault();
+         let id = $(this).data('id');
+         let status = $(this).data('status');
+
+         if (confirm(`Are you sure you want to change status to "${status}"?`)) {
+            $.ajax({
+               url: `/admin/withdraws/${id}/update-status`,
+               type: 'POST',
+               data: {
+                  status: status,
+                  _token: '{{ csrf_token() }}'
+               },
+               success: function(response) {
+                  if (response.success) {
+                     toastr.success(response.message);
+                     table.ajax.reload(null, false);
+                  } else {
+                     toastr.error(response.message);
+                  }
+               },
+               error: function(xhr) {
+                  toastr.error(xhr.responseJSON?.message || 'Error occurred.');
+               }
+            });
+         }
+      });
    });
 </script>
+
 
 @endsection

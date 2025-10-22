@@ -26,7 +26,7 @@ class WithdrawController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $data = Withdrawal::orderBy('id', 'DESC')->get();
+            $data = Withdrawal::with('customer')->orderBy('id', 'DESC')->get();
 
             return DataTables::of($data)
                 ->addIndexColumn()
@@ -35,13 +35,13 @@ class WithdrawController extends Controller
 
                 ->addColumn('txn_id', fn($row) => $row->txn_id ?? 'N/A')
 
-                ->addColumn('user', fn($row) => $row->user ?? 'N/A')
+                ->addColumn('customer', function ($row) {
+                    return $row->customer?->name ?? 'N/A';
+                })
 
                 ->addColumn('amount', fn($row) => number_format($row->amount, 2))
 
                 ->addColumn('charges', fn($row) => number_format($row->charges, 2))
-
-                ->addColumn('columns', fn($row) => $row->columns ?? 'N/A')
 
                 ->addColumn('to_deduct', fn($row) => number_format($row->to_deduct, 2))
 
@@ -60,16 +60,29 @@ class WithdrawController extends Controller
                 ->addColumn('updated_at', fn($row) => $row->updated_at?->format('Y-m-d H:i:s'))
 
                 ->addColumn('status', function ($row) {
-                    $statusText = ucfirst($row->status ?? 'unknown'); // enum value direct aa rahi hai (pending, approved, rejected)
+                    $status = ucfirst($row->status ?? 'Unknown');
 
-                    $statusClass = match ($row->status) {
-                        'pending'  => 'bg-warning',
-                        'approved' => 'bg-success',
-                        'rejected' => 'bg-danger',
-                        default    => 'bg-secondary',
+                    $colorClass = match ($status) {
+                        'Pending' => 'bg-warning text-dark',
+                        'Approved' => 'bg-success',
+                        'Rejected' => 'bg-danger',
+                        'Unknown' => 'bg-info text-dark',
+                        default => 'bg-secondary'
                     };
 
-                    return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
+                    // Dropdown with current status
+                    return '
+                    <div class="dropdown">
+                        <span class="badge ' . $colorClass . ' dropdown-toggle" data-bs-toggle="dropdown" style="cursor:pointer;">
+                            ' . $status . '
+                        </span>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item change-status" href="#" data-id="' . $row->id . '" data-status="Pending">Pending</a></li>
+                            <li><a class="dropdown-item change-status" href="#" data-id="' . $row->id . '" data-status="Approved">Approved</a></li>
+                            <li><a class="dropdown-item change-status" href="#" data-id="' . $row->id . '" data-status="Rejected">Rejected</a></li>
+                            <li><a class="dropdown-item change-status" href="#" data-id="' . $row->id . '" data-status="Unknown">Unknown</a></li>
+                        </ul>
+                    </div>';
                 })
 
                 ->addColumn('action', function ($row) {
@@ -79,9 +92,9 @@ class WithdrawController extends Controller
 
                     $btn  = '<a href="' . $showUrl . '" class="btn btn-sm btn-info me-1"><i class="fas fa-eye fw-bold"></i></a>';
                     $btn .= '<a href="' . $editUrl . '" class="btn btn-sm btn-primary me-1"><i class="fas fa-edit fw-bold"></i></a>';
-                    $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline">'
+                    $btn .= '<form action="' . $deleteUrl . '" method="POST" class="d-inline delete-withdraw-form">'
                         . csrf_field() . method_field('DELETE')
-                        . '<button type="submit" class="btn btn-sm btn-danger" onclick="return confirm(\'Are you sure?\')"><i class="fas fa-trash-alt fw-bold"></i></button></form>';
+                        . '<button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash-alt fw-bold"></i></button></form>';
 
                     return $btn;
                 })
@@ -277,15 +290,17 @@ class WithdrawController extends Controller
         }
 
         $withdrawal = Withdrawal::findOrFail($id);
-        $withdrawal->status = $request->input('status');
+        $withdrawal->status = $request->status;
         $withdrawal->save();
+
+        // Optional: Send Mail confirmation (example)
+        // Mail::to($withdrawal->customer->email)->send(new WithdrawalStatusMail($withdrawal));
 
         return response()->json([
             'success' => true,
-            'message' => 'Withdrawal status updated successfully!',
+            'message' => "Withdrawal status updated to {$request->status} successfully!",
         ]);
     }
-
 
     public function destroy($id)
     {
