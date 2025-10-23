@@ -887,7 +887,7 @@ class CustomerDataController extends Controller
         }
     }
 
-    public function paymentDetail(Request $request)
+     public function paymentDetail(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'id' => 'required|integer|exists:wallet_transactions,id',
@@ -930,17 +930,26 @@ class CustomerDataController extends Controller
                 ], 404);
             }
 
+            // ✅ Fetch withdrawal using same txn_no
+            $withdrawal = Withdrawal::where('txn_id', $wallet->txn_no)->first();
+
             $settings = Setting::first();
 
             $data = [
-                'id'             => $wallet->id,
-                'txn_no'         => $wallet->txn_no,
-                'order_id'       => $wallet->order_id,
-                'amount'         => $wallet->amount,
-                'type'           => $wallet->type,
-                'note'           => $wallet->note,
-                'created_at'     => $wallet->created_at ? $wallet->created_at->format('Y-m-d H:i:s') : null,
-                'updated_at'     => $wallet->updated_at ? $wallet->updated_at->format('Y-m-d H:i:s') : null,
+                'id'               => $wallet->id,
+                'txn_no'           => $wallet->txn_no,
+                'order_id'         => $wallet->order_id,
+                'amount'           => $wallet->amount,
+                'type'             => $wallet->type,
+                'note'             => $wallet->note,
+                'status'           => $withdrawal->status ?? 'N/A', // ✅ get from withdrawal
+                'reference_no'     => $withdrawal->reference_number ?? 'N/A',
+                'payment_mode'     => $withdrawal->payment_mode ?? 'N/A',
+                'withdraw_charges' => $withdrawal->charges ?? 0,
+                'withdraw_amount'  => $withdrawal->amount ?? 0,
+                'to_deduct'        => $withdrawal->to_deduct ?? 0,
+                'created_at'       => $wallet->created_at?->format('Y-m-d H:i:s'),
+                'updated_at'       => $wallet->updated_at?->format('Y-m-d H:i:s'),
                 'website_currency' => $settings->website_currency ?? 'INR',
 
                 'franchise' => $wallet->franchise ? [
@@ -1168,7 +1177,6 @@ class CustomerDataController extends Controller
             'account_number' => 'required|string|max:255',
             'ifsc_code' => 'required|string|max:255',
             'source' => 'required|string|max:255|in:WEB,APP',
-
         ]);
 
         if ($validator->fails()) {
@@ -1215,14 +1223,17 @@ class CustomerDataController extends Controller
 
         DB::beginTransaction();
         try {
-            $lastWithdrawal = Withdrawal::latest('id')->first();
-            $nextSequence = $lastWithdrawal ? $lastWithdrawal->id + 1 : 1;
-            $datePart = now()->format('dMY');
-            $txnNumber = str_pad($nextSequence, 6, '0', STR_PAD_LEFT);
-            $txnId = 'WDR' . $datePart . $txnNumber;
+            $lastTxn = DB::table('wallet_transactions')->orderBy('id', 'desc')->first();
+            $nextNumber = 1;
+
+            if ($lastTxn && preg_match('/TXN\d{4}(\d{6})/', $lastTxn->txn_no, $matches)) {
+                $nextNumber = intval($matches[1]) + 1;
+            }
+
+            $txnId = 'TXN' . date('Y') . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
 
             // WITHDRAW20250005 for reference number
-            $refNo = 'WITHDRAW' . date('Y') . str_pad($nextSequence, 5, '0', STR_PAD_LEFT);
+            $refNo = 'WITHDRAW' . date('Y') . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
             $withdrawal = Withdrawal::create([
                 'txn_id' => $txnId,
@@ -1241,16 +1252,9 @@ class CustomerDataController extends Controller
                 'source' => $request->source,
             ]);
 
-            $latestTxn = DB::table('wallet_transactions')->orderBy('id', 'desc')->first();
-            $nextNumber = 1;
-            if ($latestTxn && preg_match('/TXN\d{4}(\d{6})/', $latestTxn->txn_no, $matches)) {
-                $nextNumber = intval($matches[1]) + 1;
-            }
-            $txnNo = 'TXN' . date('Y') . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-
             Wallet::create([
-                'txn_no' => $txnNo,
-                'reference_no' => $withdrawal->txn_id,
+                'txn_no' => $txnId, 
+                'reference_no' => $refNo,
                 'order_id' => null,
                 'franchise_id' => Franchise::where('code', $customer->ref_by)->value('id'),
                 'customer_id' => $customer->id,
@@ -1315,3 +1319,4 @@ class CustomerDataController extends Controller
         }
     }
 }
+

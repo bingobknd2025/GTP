@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Customer;
 use App\Models\Deposit;
+use App\Models\Franchise;
 use App\Models\Setting;
 use App\Models\Withdrawal;
 use DataTables;
@@ -278,7 +279,6 @@ class WithdrawController extends Controller
 
     public function updateStatus(Request $request, $id): JsonResponse
     {
-        // Validate the incoming request
         $validator = Validator::make($request->all(), [
             'status' => 'required|in:Pending,Approved,Rejected,Unknown',
         ]);
@@ -290,59 +290,55 @@ class WithdrawController extends Controller
             ], 400);
         }
 
-        // Find the withdrawal
         $withdrawal = Withdrawal::findOrFail($id);
-
-        // Update the status
         $withdrawal->status = $request->status;
         $withdrawal->save();
 
-        // Fetch necessary data
         $mainSettings = Setting::first();
         $user = Customer::find($withdrawal->customer_id);
+        $franchise = $user?->ref_by ? Franchise::where('code', $user->ref_by)->first() : null;
 
         try {
-            // 1️⃣ Mail to Admin
             if ($mainSettings?->mail_from_email) {
                 Mail::send('emails.withdraw_status', [
-                    'withdraw' => $withdrawal,
+                    'withdrawal' => $withdrawal,
                     'settings' => $mainSettings,
-                    'for'      => 'admin',
-                    'user'     => $user,
+                    'user' => $user,
+                    'role' => 'admin',
                 ], function ($message) use ($mainSettings) {
                     $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
-                        ->subject('Withdrawal Status Updated');
+                        ->subject('Withdrawal Status Updated - Admin Notification');
                 });
             }
 
-            // 2️⃣ Mail to Franchise (if user has a referral)
-            $franchise = $user?->ref_by ? Franchise::where('code', $user->ref_by)->first() : null;
             if ($franchise?->email) {
                 Mail::send('emails.withdraw_status', [
-                    'withdraw' => $withdrawal,
+                    'withdrawal' => $withdrawal,
                     'settings' => $mainSettings,
-                    'for'      => 'franchise',
-                    'user'     => $user,
+                    'user' => $user,
+                    'role' => 'franchise',
+                    'franchise' => $franchise,
                 ], function ($message) use ($franchise) {
-                    $message->to($franchise->email, $franchise->name ?? '')
-                        ->subject('Withdrawal Status Updated');
+                    $message->to($franchise->email, $franchise->name ?? 'Franchise Partner')
+                        ->subject('Withdrawal Status Updated - Franchise Notification');
                 });
             }
 
-            // 3️⃣ Mail to User
             if ($user?->email) {
                 Mail::send('emails.withdraw_status', [
-                    'withdraw' => $withdrawal,
-                    'user'     => $user,
-                    'for'      => 'user',
+                    'withdrawal' => $withdrawal,
+                    'user' => $user,
+                    'role' => 'user',
                 ], function ($message) use ($user) {
-                    $message->to($user->email, $user->name ?? '')
+                    $message->to($user->email, $user->fname ?? 'User')
                         ->subject('Your Withdrawal Status Has Been Updated');
                 });
             }
         } catch (\Exception $e) {
-            // Optional: Log the error but don't break the API
-            \Log::error("Withdrawal email error: " . $e->getMessage());
+            response()->json([
+                'success' => false,
+                'message' => 'Status updated but failed to send email notifications: ' . $e->getMessage(),
+            ], 500);
         }
 
         return response()->json([
@@ -350,7 +346,6 @@ class WithdrawController extends Controller
             'message' => "Withdrawal status updated to '{$request->status}' successfully!",
         ]);
     }
-
 
     public function destroy($id)
     {
