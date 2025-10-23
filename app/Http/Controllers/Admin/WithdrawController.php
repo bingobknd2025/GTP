@@ -278,29 +278,79 @@ class WithdrawController extends Controller
 
     public function updateStatus(Request $request, $id): JsonResponse
     {
-        $validate = Validator::make($request->all(), [
+        // Validate the incoming request
+        $validator = Validator::make($request->all(), [
             'status' => 'required|in:Pending,Approved,Rejected,Unknown',
         ]);
 
-        if ($validate->fails()) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => $validate->errors()->first(),
+                'message' => $validator->errors()->first(),
             ], 400);
         }
 
+        // Find the withdrawal
         $withdrawal = Withdrawal::findOrFail($id);
+
+        // Update the status
         $withdrawal->status = $request->status;
         $withdrawal->save();
 
-        // Optional: Send Mail confirmation (example)
-        // Mail::to($withdrawal->customer->email)->send(new WithdrawalStatusMail($withdrawal));
+        // Fetch necessary data
+        $mainSettings = Setting::first();
+        $user = Customer::find($withdrawal->customer_id);
+
+        try {
+            // 1️⃣ Mail to Admin
+            if ($mainSettings?->mail_from_email) {
+                Mail::send('emails.withdraw_status', [
+                    'withdraw' => $withdrawal,
+                    'settings' => $mainSettings,
+                    'for'      => 'admin',
+                    'user'     => $user,
+                ], function ($message) use ($mainSettings) {
+                    $message->to($mainSettings->mail_from_email, $mainSettings->mail_from_name)
+                        ->subject('Withdrawal Status Updated');
+                });
+            }
+
+            // 2️⃣ Mail to Franchise (if user has a referral)
+            $franchise = $user?->ref_by ? Franchise::where('code', $user->ref_by)->first() : null;
+            if ($franchise?->email) {
+                Mail::send('emails.withdraw_status', [
+                    'withdraw' => $withdrawal,
+                    'settings' => $mainSettings,
+                    'for'      => 'franchise',
+                    'user'     => $user,
+                ], function ($message) use ($franchise) {
+                    $message->to($franchise->email, $franchise->name ?? '')
+                        ->subject('Withdrawal Status Updated');
+                });
+            }
+
+            // 3️⃣ Mail to User
+            if ($user?->email) {
+                Mail::send('emails.withdraw_status', [
+                    'withdraw' => $withdrawal,
+                    'user'     => $user,
+                    'for'      => 'user',
+                ], function ($message) use ($user) {
+                    $message->to($user->email, $user->name ?? '')
+                        ->subject('Your Withdrawal Status Has Been Updated');
+                });
+            }
+        } catch (\Exception $e) {
+            // Optional: Log the error but don't break the API
+            \Log::error("Withdrawal email error: " . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
-            'message' => "Withdrawal status updated to {$request->status} successfully!",
+            'message' => "Withdrawal status updated to '{$request->status}' successfully!",
         ]);
     }
+
 
     public function destroy($id)
     {

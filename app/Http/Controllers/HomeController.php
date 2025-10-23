@@ -10,26 +10,22 @@ use App\Models\Kyc;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use App\Models\GoldRate;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
   public function index()
   {
-    // Current and last month dates
     $currentMonthStart = Carbon::now()->startOfMonth();
     $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
     $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-    // Total customers (all time)
     $totalCustomers = Customer::count();
 
-    // Customers registered this month
     $thisMonthCustomers = Customer::where('created_at', '>=', $currentMonthStart)->count();
 
-    // Customers registered last month
     $lastMonthCustomers = Customer::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-    // Calculate % change (handle divide by zero)
     if ($lastMonthCustomers > 0) {
       $growthPercentage = (($thisMonthCustomers - $lastMonthCustomers) / $lastMonthCustomers) * 100;
     } else {
@@ -38,81 +34,63 @@ class HomeController extends Controller
     $activeCustomers = Customer::where('status', 'Approved')->count();
     $inactiveCustomers = Customer::where('status', 'Pending')->count();
 
-    // ---- ORDER DATA ----
     $currentMonthStart = Carbon::now()->startOfMonth();
     $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
     $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-    // Total Orders (All Time)
     $totalOrders = Order::count();
 
-    // Orders this month
     $thisMonthOrders = Order::where('created_at', '>=', $currentMonthStart)->count();
 
-    // Orders last month
     $lastMonthOrders = Order::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-    // % Growth Calculation
     if ($lastMonthOrders > 0) {
       $orderGrowth = (($thisMonthOrders - $lastMonthOrders) / $lastMonthOrders) * 100;
     } else {
       $orderGrowth = $thisMonthOrders > 0 ? 100 : 0;
     }
 
-    // Order status counts
     $pendingOrders = Order::where('status', 'Pending')->count();
     $completedOrders = Order::where('status', 'Completed')->count();
 
-    // ---- FRANCHISE DATA ----
     $currentMonthStart = Carbon::now()->startOfMonth();
     $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
     $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-    // Total franchises (all time)
     $totalFranchises = Franchise::count();
 
-    // Franchises registered this month
     $thisMonthFranchises = Franchise::where('created_at', '>=', $currentMonthStart)->count();
 
-    // Franchises registered last month
     $lastMonthFranchises = Franchise::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-    // % Growth calculation (safe divide)
     if ($lastMonthFranchises > 0) {
       $franchiseGrowth = (($thisMonthFranchises - $lastMonthFranchises) / $lastMonthFranchises) * 100;
     } else {
       $franchiseGrowth = $thisMonthFranchises > 0 ? 100 : 0;
     }
 
-    // Status counts
     $activeFranchises = Franchise::where('status', 'Approved')->count();
     $inactiveFranchises = Franchise::where('status', 'Pending')->count();
 
     $totalkyc = KYC::query()->count();
     $pendingkyc = KYC::query()->where('status', 'Pending')->count();
 
-    // ---- KYC DATA ----
     $currentMonthStart = Carbon::now()->startOfMonth();
     $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
     $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
 
-    // Total KYC (all time)
     $totalkyc = KYC::count();
 
-    // KYC this month
     $thisMonthKYC = KYC::where('created_at', '>=', $currentMonthStart)->count();
 
-    // KYC last month
     $lastMonthKYC = KYC::whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])->count();
 
-    // % Growth Calculation
     if ($lastMonthKYC > 0) {
       $kycGrowth = (($thisMonthKYC - $lastMonthKYC) / $lastMonthKYC) * 100;
     } else {
       $kycGrowth = $thisMonthKYC > 0 ? 100 : 0;
     }
 
-    // Status counts
     $pendingkyc = KYC::where('status', 'Pending')->count();
     $approvedKYC = KYC::where('status', 'Approved')->count();
     $totalRevenue = Order::sum('total_price');
@@ -139,138 +117,244 @@ class HomeController extends Controller
     ));
   }
 
-  // public function getGoldprice()
-  // {
-  //   $urls = [
-  //     'INR' => "https://www.goldapi.io/api/XAU/INR",
-  //     'USD' => "https://www.goldapi.io/api/XAU/USD",
-  //   ];
-
-  //   $goldRates = [];
-  //   $errors = [];
-
-  //   foreach ($urls as $currency => $url) {
-  //     try {
-  //       $response = Http::withHeaders([
-  //         'x-access-token' => 'goldapi-r72pslvwlb57r-io',
-  //       ])->get($url);
-
-  //       if ($response->failed()) {
-  //         $errors[$currency] = "API failed with status " . $response->status();
-  //         continue;
-  //       }
-
-  //       $data = $response->json();
-
-  //       if (!$data || !isset($data['price'])) {
-  //         $errors[$currency] = "Invalid or empty response for {$currency}";
-  //         continue;
-  //       }
-
-  //       // Check if record exists
-  //       $goldRate = GoldRate::where('currency', $currency)->first();
-  //       dd($goldRate);
-
-  //       if ($goldRate) {
-  //         // Update only existing record
-  //         $goldRate->update([
-  //           'live_price'       => $data['price'] ?? null,
-  //           'price_gram_24k'   => $data['price_gram_24k'] ?? null,
-  //           'price_gram_22k'   => $data['price_gram_22k'] ?? null,
-  //           'price_gram_21k'   => $data['price_gram_21k'] ?? null,
-  //           'price_gram_20k'   => $data['price_gram_20k'] ?? null,
-  //           'price_gram_18k'   => $data['price_gram_18k'] ?? null,
-  //           'price_gram_16k'   => $data['price_gram_16k'] ?? null,
-  //           'price_gram_14k'   => $data['price_gram_14k'] ?? null,
-  //           'price_gram_10k'   => $data['price_gram_10k'] ?? null,
-  //           'fetched_at'       => Carbon::now()->format('Y-m-d H:i:00'),
-  //         ]);
-  //       } else {
-  //         // Skip if not found
-  //         $errors[$currency] = "Record not found for {$currency}, skipped update.";
-  //         continue;
-  //       }
-
-  //       $goldRates[] = $goldRate->fresh();
-  //     } catch (\Exception $e) {
-  //       $errors[$currency] = "Exception: " . $e->getMessage();
-  //     }
-  //   }
-
-  //   // s
-
-  //   return response()->json([
-  //     'status' => 'success',
-  //     'message' => 'Gold rates updated successfully!',
-  //     'data' => $goldRates,
-  //     'errors' => $errors
-  //   ], 200);
-  // }
-
   public function getGoldprice()
   {
-      $urls = [
-          'INR' => "https://www.goldapi.io/api/XAU/INR",
-          'USD' => "https://www.goldapi.io/api/XAU/USD",
-      ];
+    $urls = [
+      'INR' => "https://www.goldapi.io/api/XAU/INR",
+      'USD' => "https://www.goldapi.io/api/XAU/USD",
+    ];
 
-      $goldRates = [];
-      $errors = [];
+    $goldRates = [];
+    $errors = [];
 
-      foreach ($urls as $currency => $url) {
-          try {
-              $response = Http::withHeaders([
-                  'x-access-token' => 'goldapi-r72pslvwlb57r-io',
-              ])->get($url);
+    foreach ($urls as $currency => $url) {
+      try {
+        $response = Http::withHeaders([
+          'x-access-token' => 'goldapi-r72pslvwlb57r-io',
+        ])->get($url);
 
-              $data = $response->json();
+        $data = $response->json();
 
-              // Get existing record
-              $goldRate = GoldRate::firstOrCreate(['currency' => $currency]);
+        $goldRate = GoldRate::firstOrCreate(['currency' => $currency]);
+        if ($response->failed() || !$data || !isset($data['price'])) {
+          $errors[$currency] = $response->failed()
+            ? "API failed with status " . $response->status()
+            : "Invalid response, showing previous data.";
 
-              if ($response->failed() || !$data || !isset($data['price'])) {
-                  // If API fails, keep previous value
-                  $errors[$currency] = $response->failed() 
-                      ? "API failed with status " . $response->status() 
-                      : "Invalid response, showing previous data.";
+          $goldRates[] = $goldRate;
+          continue;
+        }
 
-                  $goldRates[] = $goldRate; // previous value
-                  continue;
-              }
-
-              // Update the record
-              $goldRate->update([
-                  'live_price'       => $data['price'] ?? $goldRate->live_price,
-                  'price_gram_24k'   => $data['price_gram_24k'] ?? $goldRate->price_gram_24k,
-                  'price_gram_22k'   => $data['price_gram_22k'] ?? $goldRate->price_gram_22k,
-                  'price_gram_21k'   => $data['price_gram_21k'] ?? $goldRate->price_gram_21k,
-                  'price_gram_20k'   => $data['price_gram_20k'] ?? $goldRate->price_gram_20k,
-                  'price_gram_18k'   => $data['price_gram_18k'] ?? $goldRate->price_gram_18k,
-                  'price_gram_16k'   => $data['price_gram_16k'] ?? $goldRate->price_gram_16k,
-                  'price_gram_14k'   => $data['price_gram_14k'] ?? $goldRate->price_gram_14k,
-                  'price_gram_10k'   => $data['price_gram_10k'] ?? $goldRate->price_gram_10k,
-                  'fetched_at'       => now()->format('Y-m-d H:i:00'),
-              ]);
-
-              $goldRates[] = $goldRate->fresh();
-
-          } catch (\Exception $e) {
-              // Catch exceptions and keep previous value
-              $errors[$currency] = "Exception: " . $e->getMessage();
-              $goldRate = GoldRate::where('currency', $currency)->first();
-              if ($goldRate) {
-                  $goldRates[] = $goldRate;
-              }
-          }
+        $goldRate->update([
+          'live_price'       => $data['price'] ?? $goldRate->live_price,
+          'price_gram_24k'   => $data['price_gram_24k'] ?? $goldRate->price_gram_24k,
+          'price_gram_22k'   => $data['price_gram_22k'] ?? $goldRate->price_gram_22k,
+          'price_gram_21k'   => $data['price_gram_21k'] ?? $goldRate->price_gram_21k,
+          'price_gram_20k'   => $data['price_gram_20k'] ?? $goldRate->price_gram_20k,
+          'price_gram_18k'   => $data['price_gram_18k'] ?? $goldRate->price_gram_18k,
+          'price_gram_16k'   => $data['price_gram_16k'] ?? $goldRate->price_gram_16k,
+          'price_gram_14k'   => $data['price_gram_14k'] ?? $goldRate->price_gram_14k,
+          'price_gram_10k'   => $data['price_gram_10k'] ?? $goldRate->price_gram_10k,
+          'fetched_at'       => now()->format('Y-m-d H:i:00'),
+        ]);
+        $goldRates[] = $goldRate->fresh();
+      } catch (\Exception $e) {
+        $errors[$currency] = "Exception: " . $e->getMessage();
+        $goldRate = GoldRate::where('currency', $currency)->first();
+        if ($goldRate) {
+          $goldRates[] = $goldRate;
+        }
       }
+    }
 
-      return response()->json([
-          'status' => 'success',
-          'message' => 'Gold rates fetched successfully!',
-          'data' => $goldRates,
-          'errors' => $errors
-      ], 200);
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Gold rates fetched successfully!',
+      'data' => $goldRates,
+      'errors' => $errors
+    ], 200);
   }
 
+  public function termsAndConditions()
+  {
+    $policy = DB::table('policies')->where('id', 1)->first();
 
+    if (!$policy || !$policy->terms_conditions) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Terms & Conditions not found',
+        'data' => []
+      ], 404);
+    }
+
+    $decodedPolicy = json_decode($policy->terms_conditions, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Invalid Terms & Conditions JSON format',
+        'data' => []
+      ], 500);
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Terms & Conditions Policies',
+      'data' => $decodedPolicy
+    ]);
+  }
+
+  public function privacyPolicy()
+  {
+    $policy = DB::table('policies')->where('id', 1)->first();
+
+    if (!$policy || !$policy->privacy_policy) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Privacy Policy not found',
+        'data' => []
+      ], 404);
+    }
+
+    $decodedPolicy = json_decode($policy->privacy_policy, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Invalid privacy policy JSON format',
+        'data' => []
+      ], 500);
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Privacy Policy',
+      'data' => $decodedPolicy
+    ]);
+  }
+
+  public function refundPolicy()
+  {
+    $policy = DB::table('policies')->where('id', 1)->first();
+
+    if (!$policy || !$policy->refund_policy) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Refund Policy not found',
+        'data' => []
+      ], 404);
+    }
+
+    $decodedPolicy = json_decode($policy->refund_policy, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Invalid refund policy JSON format',
+        'data' => []
+      ], 500);
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Refund Policy',
+      'data' => $decodedPolicy
+    ]);
+  }
+
+  public function amlPolicy()
+  {
+    $policy = DB::table('policies')->where('id', 1)->first();
+
+    if (!$policy) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Policy record not found',
+        'data' => []
+      ], 404);
+    }
+    $policyField = 'anti_money_laundering';
+    if (!property_exists($policy, $policyField) || empty($policy->$policyField)) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Policy content not found in record',
+        'data' => []
+      ], 404);
+    }
+    $jsonString = $policy->$policyField;
+
+
+
+    $decodedPolicy = json_decode($policy->$policyField, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Invalid Policy JSON format: ' . json_last_error_msg(),
+        'data' => []
+      ], 500);
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Anti Money Laundering Policy',
+      'data' => $decodedPolicy
+    ]);
+  }
+
+  public function grievancePolicy()
+  {
+    $policy = DB::table('policies')->where('id', 1)->first();
+
+    if (!$policy || !$policy->grievance_redressal_policy) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Grievance Redressal Policy not found',
+        'data' => []
+      ], 404);
+    }
+    $decodedPolicy = json_decode($policy->grievance_redressal_policy, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Invalid Grievance Redressal Policy JSON format',
+        'data' => []
+      ], 500);
+    }
+
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Grievance Redressal Policy',
+      'data' => $decodedPolicy
+    ]);
+  }
+
+  public function affiliatePolicy()
+  {
+    $policy = DB::table('policies')->where('id', 1)->first();
+
+    if (!$policy || !$policy->affiliate_policy) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Affiliate Policy not found',
+        'data' => []
+      ], 404);
+    }
+    $decodedPolicy = json_decode($policy->affiliate_policy, true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Invalid Affiliate Policy JSON format',
+        'data' => []
+      ], 500);
+    }
+
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Affiliate Policy',
+      'data' => $decodedPolicy
+    ]);
+  }
 }

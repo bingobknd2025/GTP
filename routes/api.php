@@ -14,8 +14,14 @@ Route::middleware('api.key')->group(function () {
         Route::post('get-country', [CustomerAuthController::class, 'getCountry']);
         Route::post('get-franchises', [CustomerDataController::class, 'getFranchises']);
         Route::post('enquiry-store', [CustomerDataController::class, 'enquiryStore']);
-        Route::post('/gold/fetch', [HomeController::class, 'getGoldprice'])->name('admin.gold.fetch');
-        Route::post('/valid-franchise', [FranchiseDataController::class, 'getValidFranchises'])->name('valid.franchise');
+        Route::post('gold/fetch', [HomeController::class, 'getGoldprice'])->name('admin.gold.fetch');
+        Route::post('policy/terms_condition', [HomeController::class, 'termsAndConditions']);
+        Route::post('policy/privacy', [HomeController::class, 'privacyPolicy']);
+        Route::post('policy/refund', [HomeController::class, 'refundPolicy']);
+        Route::post('policy/aml', [HomeController::class, 'amlPolicy']);
+        Route::post('policy/grievance', [HomeController::class, 'grievancePolicy']);
+        Route::post('policy/affiliate-policy', [HomeController::class, 'affiliatePolicy']);
+        Route::post('valid-franchise', [FranchiseDataController::class, 'getValidFranchises'])->name('valid.franchise');
 
         Route::prefix('customer')->group(function () {
             Route::post('register', [CustomerAuthController::class, 'register']);
