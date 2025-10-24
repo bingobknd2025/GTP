@@ -991,46 +991,59 @@ class CustomerDataController extends Controller
     public function generateInvoice(Request $request)
     {
         try {
-            $customer = JWTAuth::parseToken()->authenticate();
-        } catch (JWTException $e) {
+            $request->validate([
+                'order_no' => 'required|string|exists:orders,order_no',
+            ]);
+
+            $transaction = Wallet::with(['order', 'franchise', 'customer'])
+                ->whereHas('order', function ($query) use ($request) {
+                    $query->where('order_no', $request->order_no);
+                })
+                ->first();
+
+            if (!$transaction) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'No transaction found for the given order number.',
+                ], 404);
+            }
+
+            $afterImages = [];
+            if (!empty($transaction->order->after_image)) {
+                $afterImages = json_decode($transaction->order->after_image, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($afterImages)) {
+                    $afterImages = array_map(fn($path) => asset('storage/' . ltrim($path, '/')), $afterImages);
+                } else {
+                    $afterImages = [];
+                }
+            }
+
+            $data = [
+                'title' => 'Invoice',
+                'invoice_no' => $transaction->txn_no,
+                'transaction' => $transaction,
+                'afterImages' => $afterImages,
+                'date' => \Carbon\Carbon::parse($transaction->created_at)->format('d M, Y h:i A'),
+            ];
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('invoices.transaction_invoice', $data);
+
+            return $pdf->download('Invoice_' . $transaction->txn_no . '.pdf');
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Invalid or missing token',
-            ], 401);
-        }
+                'status' => 'error',
+                'message' => 'Invalid request data.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Invoice generation failed: ' . $e->getMessage());
 
-        if (!$customer) {
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Customer not found',
-            ], 404);
+                'status' => 'error',
+                'message' => 'An unexpected error occurred while generating the invoice.',
+                'error_details' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
         }
-
-        $request->validate([
-            'id' => 'required|integer|exists:wallet_transactions,id',
-        ]);
-
-        $transaction = Wallet::with(['order', 'franchise', 'customer'])
-            ->findOrFail($request->id);
-
-        // Get ornament images if available
-        $afterImages = [];
-        if (!empty($transaction->order->after_image)) {
-            $afterImages = json_decode($transaction->order->after_image, true);
-            $afterImages = array_map(fn($path) => asset('storage/' . $path), $afterImages);
-        }
-
-        $data = [
-            'title' => 'Invoice',
-            'invoice_no' => $transaction->txn_no,
-            'transaction' => $transaction,
-            'afterImages' => $afterImages,
-            'date' => \Carbon\Carbon::parse($transaction->created_at)->format('d M, Y h:i A'),
-        ];
-
-        $pdf = Pdf::loadView('invoices.transaction_invoice', $data);
-
-        return $pdf->download('Invoice_' . $transaction->txn_no . '.pdf');
     }
 
     public function withdrawMethods(Request $request)
