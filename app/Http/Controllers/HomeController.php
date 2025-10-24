@@ -10,10 +10,30 @@ use App\Models\Kyc;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
 use App\Models\GoldRate;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
+  public function mainSetting()
+  {
+    $settings = Setting::first();
+
+    if (!$settings) {
+      return response()->json([
+        'status' => 'error',
+        'message' => 'Settings not found',
+        'data' => []
+      ], 404);
+    }
+
+    return response()->json([
+      'status' => 'success',
+      'message' => 'Main Settings fetched successfully',
+      'data' => $settings
+    ]);
+  }
+
   public function index()
   {
     $currentMonthStart = Carbon::now()->startOfMonth();

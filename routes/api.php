@@ -22,6 +22,7 @@ Route::middleware('api.key')->group(function () {
         Route::post('policy/grievance', [HomeController::class, 'grievancePolicy']);
         Route::post('policy/affiliate-policy', [HomeController::class, 'affiliatePolicy']);
         Route::post('valid-franchise', [FranchiseDataController::class, 'getValidFranchises'])->name('valid.franchise');
+        Route::post('settings', [HomeController::class, 'mainSetting']);
 
         Route::prefix('customer')->group(function () {
             Route::post('register', [CustomerAuthController::class, 'register']);

@@ -54,6 +54,7 @@ class OrderController extends Controller
                     };
                     return '<span class="badge ' . $statusClass . '">' . $statusText . '</span>';
                 })
+                ->addColumn('source', fn($row) => $row->source ?? 'N/A')
                 ->addColumn('created_at', fn($row) => $row->created_at?->format('Y-m-d H:i:s'))
                 ->addColumn('updated_at', fn($row) => $row->updated_at?->format('Y-m-d H:i:s'))
                 ->addColumn('action', function ($row) {
@@ -99,12 +100,12 @@ class OrderController extends Controller
             'status'                  => 'required|in:Created,Gold_Recived,Payment_Done,Order_Cancelled,In_Process',
             'order_note'              => 'nullable|string',
 
-            // images: single or multiple both allowed
             'before_image' => 'required|array',
             'before_image.*' => 'image|mimes:jpeg,png,jpg|max:3072',
 
             'after_image' => 'nullable|array',
             'after_image.*' => 'image|mimes:jpeg,png,jpg|max:3072',
+            'source' => 'required|string|in:WEB,APP',
         ]);
 
         if ($validate->fails()) {
@@ -169,6 +170,7 @@ class OrderController extends Controller
             'order_note'            => $input['order_note'] ?? null,
             'before_image'          => $input['before_image'],
             'after_image'           => $input['after_image'] ?? null,
+            'source'                => $input['source'],
         ]);
 
         // Send Emails

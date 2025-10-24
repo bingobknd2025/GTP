@@ -27,6 +27,7 @@ class Order extends Model
         'amount_paid',
         'invoice',
         'status',
+        'source',
         'approval_status',
         'customer_remarks',
         'order_note',

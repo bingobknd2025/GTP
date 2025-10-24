@@ -47,6 +47,7 @@
                               <th>Amount Paid</th>
                               <th>Invoice</th>
                               <th>Status</th>
+                              <th>Source</th>
                               <th>Created At</th>
                               <th>Updated At</th>
                               <th>Action</th>
@@ -134,6 +135,10 @@
                name: 'status',
                orderable: false,
                searchable: false
+            },
+            {
+               data: 'source',
+               name: 'source'
             },
             {
                data: 'created_at',
