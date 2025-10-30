@@ -1159,11 +1159,25 @@ class FranchiseDataController extends Controller
                     'created_at'
                 ]);
 
+            // total kyc count
+            $totalKycCount = Kyc::whereIn('customer_id', $customerIds)->count();
+
+            $totalPendingKycCount = Kyc::whereIn('customer_id', $customerIds)
+                ->where('status', 'Pending')
+                ->count();
+
+            $totalApprovedKycCount = Kyc::whereIn('customer_id', $customerIds)
+                ->where('status', 'Approved')
+                ->count();
+
             // Format response
             return response()->json([
                 'status'  => 'success',
                 'message' => 'KYC list retrieved successfully',
                 'data'    => $kycList->items(),
+                'total_kyc_count' => $totalKycCount,
+                'total_pending_kyc_count' => $totalPendingKycCount,
+                'total_approved_kyc_count' => $totalApprovedKycCount,
                 'meta'    => [
                     'current_page' => $kycList->currentPage(),
                     'last_page'    => $kycList->lastPage(),
