@@ -57,6 +57,9 @@ class CustomerDataController extends Controller
             $totalOrders = Order::where('customer_id', $customerId)->count();
             $Orders = Order::where('customer_id', $customerId)->latest()->get();
 
+            // Withdraw requests count
+            $withdrawRequestsCount = Withdrawal::where('customer_id', $customerId)->count();
+
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Dashboard data retrieved successfully',
@@ -65,6 +68,7 @@ class CustomerDataController extends Controller
                     'total_orders' => $totalOrders,
                     'account_balance' => $customer->account_balance,
                     'amount_paid' => $Orders->sum('amount_paid'),
+                    'withdraw_requests_count' => $withdrawRequestsCount,
                     'customer'     => $customer,
                     'orders'       => $Orders,
                 ]

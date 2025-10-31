@@ -100,6 +100,7 @@ Route::middleware('api.key')->group(function () {
             Route::middleware('auth:franchise')->group(function () {
 
                 Route::post('dashboard', [FranchiseDataController::class, 'dashboard']);
+                Route::post('dashboard-filter-data', [FranchiseDataController::class, 'dashboardFilterData']);
                 Route::post('profile', [FranchiseDataController::class, 'profile']);
                 Route::post('profile-update', [FranchiseDataController::class, 'updateProfile']);
                 Route::post('bank-details-update', [FranchiseDataController::class, 'updateBankDetails']);

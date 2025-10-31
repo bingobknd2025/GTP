@@ -118,7 +118,7 @@ class FranchiseDataController extends Controller
             $todayOrders = Order::whereHas('customer', function ($query) use ($franchise) {
                 $query->where('ref_by', $franchise->code);
             })
-                ->whereDate('created_at', now()) // only orders created today
+                ->whereDate('created_at', now())
                 ->count();
 
             $franchiseCode = $franchise->code;
@@ -162,6 +162,113 @@ class FranchiseDataController extends Controller
                     'franchise'  => $franchise,
                     'orders'     => $Orders,
                 ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function dashboardFilterData(Request $request)
+    {
+        try {
+            $franchise = JWTAuth::parseToken()->authenticate();
+
+            if (!$franchise) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Franchise not found'
+                ], 404);
+            }
+
+            $franchiseCode = $franchise->code;
+            $key = $request->input('key');
+            $perPage = $request->input('per_page', 10);
+
+            if (!$key) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Please provide a filter key'
+                ], 400);
+            }
+
+            $filteredData = null;
+
+            switch ($key) {
+                case 'verified_customers':
+                    $filteredData = Customer::where('ref_by', $franchiseCode)
+                        ->where(function ($q) {
+                            $q->where('account_verify', 'approved')
+                                ->orWhere('kyc_status', 'Verified');
+                        })
+                        ->paginate($perPage);
+                    break;
+
+                case 'pending_customers':
+                    $filteredData = Customer::where('ref_by', $franchiseCode)
+                        ->where(function ($q) {
+                            $q->where('account_verify', 'pending')
+                                ->orWhereNull('account_verify')
+                                ->orWhere('kyc_status', 'Pending');
+                        })
+                        ->paginate($perPage);
+                    break;
+
+                case 'rejected_customers':
+                    $filteredData = Customer::where('ref_by', $franchiseCode)
+                        ->where(function ($q) {
+                            $q->where('account_verify', 'rejected')
+                                ->orWhere('kyc_status', 'Rejected');
+                        })
+                        ->paginate($perPage);
+                    break;
+
+                case 'today_orders':
+                    $filteredData = Order::whereHas('customer', function ($q) use ($franchiseCode) {
+                        $q->where('ref_by', $franchiseCode);
+                    })
+                        ->whereDate('created_at', now())
+                        ->paginate($perPage);
+                    break;
+
+                case 'approved_kyc':
+                    $filteredData = Kyc::whereHas('customer', function ($q) use ($franchiseCode) {
+                        $q->where('ref_by', $franchiseCode);
+                    })
+                        ->where('status', 'Approved')
+                        ->paginate($perPage);
+                    break;
+
+                case 'pending_kyc':
+                    $filteredData = Kyc::whereHas('customer', function ($q) use ($franchiseCode) {
+                        $q->where('ref_by', $franchiseCode);
+                    })
+                        ->where('status', 'Pending')
+                        ->paginate($perPage);
+                    break;
+
+                case 'rejected_kyc':
+                    $filteredData = Kyc::whereHas('customer', function ($q) use ($franchiseCode) {
+                        $q->where('ref_by', $franchiseCode);
+                    })
+                        ->where('status', 'Rejected')
+                        ->paginate($perPage);
+                    break;
+
+                default:
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => 'Invalid filter key provided'
+                    ], 400);
+            }
+
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Filtered data retrieved successfully',
+                'key'     => $key,
+                'data'    => $filteredData,
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
