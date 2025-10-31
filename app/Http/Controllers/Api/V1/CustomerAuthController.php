@@ -38,10 +38,14 @@ class CustomerAuthController extends Controller
             'password'  => 'required|string|min:6|confirmed',
             'mobile_no' => 'required|digits_between:10,15|unique:customers',
             'ref_by'    => 'nullable|string|max:100',
+            'source'      => 'required|string|in:APP,WEB',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
         }
 
         $data = $validator->validated();
@@ -50,7 +54,7 @@ class CustomerAuthController extends Controller
         if (!empty($data['ref_by'])) {
             $franchise = Franchise::where('code', $data['ref_by'])->first();
             if ($franchise) {
-                $data['franchise_id'] = $franchise->id; // Save franchise_id in customers table
+                $data['franchise_id'] = $franchise->id;
             }
         }
 
@@ -62,7 +66,7 @@ class CustomerAuthController extends Controller
         OtpHelper::generateAndSendOtp($customer, 'register');
 
         return response()->json([
-            'status'   => 'success',
+            'success'   => true,
             'message'  => 'Customer registered successfully. OTP has been sent to your email for verification.',
             'token'    => $token,
             'customer' => [
@@ -72,6 +76,7 @@ class CustomerAuthController extends Controller
                 'email'       => $customer->email,
                 'ref_by'      => $customer->ref_by,
                 'franchise_id' => $customer->franchise_id ?? null,
+                'source'      => $customer->source,
             ]
         ], 201);
     }

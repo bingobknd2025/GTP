@@ -28,6 +28,7 @@ class Customer extends Authenticatable implements JWTSubject
         'status',
         'email_verfied',
         'mobile_verfied',
+        'source',
     ];
 
     protected $hidden = [
